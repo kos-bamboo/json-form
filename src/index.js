@@ -1,42 +1,10 @@
+import deepSet from './deepSet'
+import access from './access'
 import React from 'react'
 
 const typeOf = x => Object.prototype.toString.call(x)
   .slice(8, -1)
   .toLowerCase()
-
-export function access(object, keyChain, defaultValues) {
-  if (! keyChain)
-    throw Error('The required parameter keyChain was not supplied')
-
-  if (! keyChain.length)
-    return object
-
-  if (! object || typeof object !== 'object' || object[keyChain[0]] == null)
-    return undefined
-
-  return access(object[keyChain[0]], keyChain.slice(1), (defaultValues||{})[keyChain[0]])
-}
-
-export function deepSet(object, keyChain, value) {
-  let pointer = { ...object }
-  let rootValue = pointer
-
-  for (const key of keyChain)
-    if (key == null)
-      throw Error('Cannot call deepSet with null/undefined as a key')
-
-  for (const key of keyChain.slice(0, keyChain.length-1)) {
-    if (pointer[key] == null) {
-      throw Error('All editors should have a default value!')
-    } else {
-      pointer[key] = { ...pointer[key] }
-      pointer = pointer[key]
-    }
-  }
-
-  pointer[keyChain[keyChain.length-1]] = value
-  return rootValue
-}
 
 function isArrayLike(object) {
   return (

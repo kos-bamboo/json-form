@@ -1,5 +1,5 @@
 import EnzymeAdapter from 'enzyme-adapter-react-16'
-import JsonForm, { access, deepSet } from '../src'
+import JsonForm from '../src'
 import enzyme, { mount } from 'enzyme'
 import React from 'react'
 
@@ -35,44 +35,6 @@ function fauxArray(array = []) {
 }
 
 describe('json-form', () => {
-  describe('access', () => {
-    it('can access an object', () => {
-      expect(access({ foo: 'bar' }, ['foo'])).toBe('bar')
-    })
-
-    it('returns undefined if there is no object at the given position', () => {
-      expect(access({}, ['foo'])).toBe(undefined)
-    })
-
-    it('returns undefined if a key is a non-object', () => {
-      expect(
-        access({ foo: '10' }, ['foo', '0'])
-      ).toBe(undefined)
-    })
-
-    it('throws an error if no keyChain is provided', () => {
-      expect(() => access()).toThrow(/keyChain/)
-    })
-  })
-
-  describe('deepSet', () => {
-    it('can set the property of an object', () => {
-      expect(deepSet({}, ['foo'], 'bar')).toEqual({ foo: 'bar' })
-    })
-
-    it('throws an error if a chain is not predetermined', () => {
-      expect(() => {
-        deepSet({}, ['foo', 'bar', 'baz'], 'cool')
-      }).toThrow(/All editors should have a default value!/)
-    })
-
-    it('throws an error if the key is null or undefined', () => {
-      expect(() => {
-        deepSet({}, [null])
-      }).toThrow(/Cannot call deepSet with null\/undefined as a key/)
-    })
-  })
-
   it('throws an error unless the types property is supplied', () => {
     expect(() => JsonForm()).toThrow(/"types" is a required option/)
   })
