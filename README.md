@@ -52,3 +52,6 @@ const schema = {
   }
 }
 ```
+
+# Licence
+MIT, see LICENCE file
