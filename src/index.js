@@ -48,7 +48,7 @@ export default function JsonForm(options = {}) {
       )
     }
 
-    type() {
+    fullType() {
       const type = access(this.props.schema, this.props.keyChain)
 
       if (! type) {
@@ -57,6 +57,13 @@ export default function JsonForm(options = {}) {
         throw Error('Invalid type: ' + type)
       }
 
+      return type
+    }
+
+    type() {
+      const type = this.fullType()
+      if (type.$type)
+        return type.$type
       return type
     }
 
@@ -150,6 +157,32 @@ export default function JsonForm(options = {}) {
       }
     }
 
+    label() {
+      const fullType = this.fullType()
+
+      if (fullType && fullType.$label)
+        return fullType.$label
+
+      let label = this.props.keyChain[this.props.keyChain.length - 1]
+      const result = []
+
+      if (! label)
+        return ''
+
+      result.push(label[0].toUpperCase())
+
+      for (let i = 1; i < label.length; i++) {
+        if (label[i].toLowerCase() !== label[i]) {
+          result.push(' ')
+          result.push(label[i].toLowerCase())
+        } else {
+          result.push(label[i])
+        }
+      }
+
+      return result.join('')
+    }
+
     render() {
       const Editor = this.editor()
       const children = this.children()
@@ -162,6 +195,7 @@ export default function JsonForm(options = {}) {
           onChange={this.onChange}
           keyChain={this.props.keyChain}
           schema={this.props.schema}
+          label={this.label()}
           value={this.value()}
           Editor={SubEditor}
           children={children}

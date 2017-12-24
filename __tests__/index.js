@@ -1,11 +1,6 @@
-import EnzymeAdapter from 'enzyme-adapter-react-16'
 import JsonForm from '../src'
-import enzyme, { mount } from 'enzyme'
+import { mount } from 'enzyme'
 import React from 'react'
-
-enzyme.configure({
-  adapter: new EnzymeAdapter()
-})
 
 class FauxArray {
   length = 0
@@ -333,7 +328,7 @@ describe('json-form', () => {
       }
 
       expect(() => {
-        SubEditor.prototype.type.call({
+        SubEditor.prototype.fullType.call({
           props: {
             keyChain: []
           }

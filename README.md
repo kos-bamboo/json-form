@@ -9,16 +9,20 @@ I plan to keep it that way. Contributions are welcome!
 import JsonForm from '@adrianhelvik/json-form'
 
 const Form = JsonForm({
-  string: ({ onChange, value }) => (
-    <input onChange={onChange} value={value} />
+  string: ({ onChange, value, label }) => (
+    <div>
+      {label}: <input onChange={onChange} value={value} />
+    </div>
   ),
-  test: ({ onChange, value }) => (
-    <textarea onChange={onChange} value={value} />
+  test: ({ onChange, value, label }) => (
+    <div>
+      {label}: <textarea onChange={onChange} value={value} />
+    </div>
   )
 })
 
 const schema = {
-  author: 'string',
+  authorName: 'string',
   articles: [{
     title: 'string',
     content: 'text',
@@ -28,15 +32,33 @@ const schema = {
 <Form schema={schema} value={...} onChange={...} />
 ```
 
-This will generate a form where you can add articles,
-which consist of a title and a content field.
+Renders the following html:
 
-## To do
+```html
+<div>
+  Author name: <input>
+</div>
+<div>
+  <div>
+    Title: <input>
+  </div>
+  <div>
+    Title: <input>
+  </div>
+  ...
+  <button>Add item</button>
+</div>
+```
 
-### Create label from key functionality
-Default to the key of the object uppercased and decamelized
+As you can see, the keys are transformed from camel case to
+space delimited words, with the first letter in upper case.
 
-### Create explicit label functionality
+### Explicit labels
+
+If you need to use a custom label, use the format below.
+Specify a type as you normally would, but under a $type
+key, and specify a label under the $label key.
+
 ```javascript
 const schema = {
   author: {

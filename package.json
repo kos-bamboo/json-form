@@ -26,6 +26,6 @@
     "build": "babel src --out-dir dist"
   },
   "jest": {
-    "setupTestFrameworkScriptFile": "./node_modules/jest-enzyme/lib/index.js"
+    "setupTestFrameworkScriptFile": "./testSetup.js"
   }
 }
