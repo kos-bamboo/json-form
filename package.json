@@ -1,7 +1,7 @@
 {
   "name": "@adrianhelvik/json-form",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "MIT",
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -23,7 +23,8 @@
   "scripts": {
     "test": "jest --coverage",
     "start": "jest --coverage --watch",
-    "build": "babel src --out-dir dist"
+    "build": "babel src --out-dir dist",
+    "prepublish": "npm run build"
   },
   "jest": {
     "setupTestFrameworkScriptFile": "./testSetup.js"
