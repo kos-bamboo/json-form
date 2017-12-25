@@ -215,7 +215,7 @@ export default function JsonForm(options = {}) {
         return decamelizeAndUppercaseFirst(
           singular(
             this.props.schemaKeyChain[this.props.schemaKeyChain.length - 2]
-          )
+          ) + ' ' + (Number(this.props.valueKeyChain[this.props.valueKeyChain.length - 1]) + 1)
         )
       }
 

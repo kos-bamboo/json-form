@@ -31,9 +31,10 @@ describe('object editor', () => {
       }]
     }
     const value = {
-      peaches: [{
-        weight: 10
-      }]
+      peaches: [
+        { weight: 10 },
+        { weight: 25 },
+      ]
     }
 
     const wrapper = mount(<Form schema={schema} value={value} />)
@@ -42,8 +43,12 @@ describe('object editor', () => {
       '<array-editor>'+
       /**/'<h3>Peaches</h3>'+
       /**/'<object-editor>'+
-      /**//**/'<h3>Peach</h3>'+
+      /**//**/'<h3>Peach 1</h3>'+
       /**//**/'<input type="number" value="10">'+
+      /**/'</object-editor>'+
+      /**/'<object-editor>'+
+      /**//**/'<h3>Peach 2</h3>'+
+      /**//**/'<input type="number" value="25">'+
       /**/'</object-editor>'+
       /**/'<button>Add</button>'+
       '</array-editor>'
