@@ -3,6 +3,28 @@ import access from './access'
 import typeOf from './typeOf'
 import React from 'react'
 
+function decamelizeAndUppercaseFirst(value) {
+  const result = []
+  result.push(value[0].toUpperCase())
+  for (let i = 1; i < value.length; i++) {
+    if (value[i].toLowerCase() !== value[i]) {
+      result.push(' ')
+      result.push(value[i].toLowerCase())
+    } else {
+      result.push(value[i])
+    }
+  }
+  return result.join('')
+}
+
+function singular(string) {
+  if (string.endsWith('es'))
+    return string.substring(0, string.length - 2)
+  if (string.endsWith('s'))
+    return string.substring(0, string.length - 1)
+  return string
+}
+
 function isArrayLike(object) {
   return (
     object
@@ -175,27 +197,39 @@ export default function JsonForm(options = {}) {
       }
     }
 
+    parentType() {
+      const type = access(this.props.schema, this.props.schemaKeyChain.slice(0, -1))
+
+      /*
+      if (! type) {
+        console.error('Schema:', this.props.schema)
+        console.error('Key chain:', this.props.schemaKeyChain)
+        throw Error('Invalid type: ' + type)
+      }
+      */
+
+      return type
+    }
+
     label() {
+      const parentType = this.parentType()
+
+      if (Array.isArray(parentType)) {
+        return decamelizeAndUppercaseFirst(
+          singular(
+            this.props.schemaKeyChain[this.props.schemaKeyChain.length - 2]
+          )
+        )
+      }
+
       const fullType = this.fullType()
 
       if (fullType && fullType.$label)
         return fullType.$label
 
       let label = this.props.schemaKeyChain[this.props.schemaKeyChain.length - 1]
-      const result = []
 
-      result.push(label[0].toUpperCase())
-
-      for (let i = 1; i < label.length; i++) {
-        if (label[i].toLowerCase() !== label[i]) {
-          result.push(' ')
-          result.push(label[i].toLowerCase())
-        } else {
-          result.push(label[i])
-        }
-      }
-
-      return result.join('')
+      return decamelizeAndUppercaseFirst(label)
     }
 
     render() {
