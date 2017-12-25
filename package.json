@@ -31,7 +31,15 @@
     "prepublish": "npm test && npm run build"
   },
   "jest": {
-    "setupTestFrameworkScriptFile": "./testSetup.js"
+    "setupTestFrameworkScriptFile": "./testSetup.js",
+    "coverageThreshold": {
+      "global": {
+        "branches": 100,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      }
+    }
   },
   "dependencies": {
     "babel-plugin-transform-object-rest-spread": "^6.26.0"
