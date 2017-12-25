@@ -3,3 +3,5 @@ dist
 coverage
 yarn.lock
 package-lock.json
+*.swp
+*.swo
