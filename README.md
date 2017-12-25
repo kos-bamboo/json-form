@@ -75,5 +75,27 @@ const schema = {
 }
 ```
 
+### Multiple array editors
+
+In some cases you might want several ways to define multiple
+types of array editors. One example that I need is a paginated
+list and a non-paginated.
+
+Custom array editors are denoted with a symbol in the types
+object and with an array with its first item being the given
+symbol in the schema.
+
+```javascript
+const types = {
+  string: StringEditor,
+  [Symbol.for('paginated')]: PaginatedEditor,
+}
+const schema = {
+  list: [Symbol.for('paginated'), {
+    title: 'string'
+  }]
+}
+```
+
 # Licence
 MIT, see LICENCE file

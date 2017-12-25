@@ -223,7 +223,7 @@ describe('json-form', () => {
         expect(wrapper.html()).toBe(
           '<div class="array">' +
           /**/'<div class="object">' +
-          /**//**/'<input class="input">' +
+          /**//**/'<input class="input" value="foo">' +
           /**/'</div>' +
           /**/'<button>Add item</button>' +
           '</div>'
@@ -241,7 +241,7 @@ describe('json-form', () => {
         expect(wrapper.html()).toBe(
           '<div>' +
           /**/'<div class="object">' +
-          /**//**/'<input class="input">' +
+          /**//**/'<input class="input" value="foo">' +
           /**/'</div>' +
           /**/'<button>Add item</button>' +
           '</div>'
@@ -330,7 +330,7 @@ describe('json-form', () => {
       expect(() => {
         SubEditor.prototype.fullType.call({
           props: {
-            keyChain: []
+            schemaKeyChain: []
           }
         })
       }).toThrow(/Invalid type: undefined/)
@@ -355,7 +355,8 @@ describe('json-form', () => {
     it('type returns array like values', () => {
       const value = SubEditor.prototype.value.call({
         props: {
-          keyChain: [],
+          schemaKeyChain: [],
+          valueKeyChain: [],
           value: fauxArray([
             'This is',
             'array like'
@@ -370,7 +371,7 @@ describe('json-form', () => {
     test('value() returns the value by default', () => {
       const actual = SubEditor.prototype.value.call({
         props: {
-          keyChain: [],
+          valueKeyChain: [],
           value: 'something',
         },
         typeName: () => '...',

@@ -43,17 +43,17 @@ export default function JsonForm(options = {}) {
   class SubEditor extends React.Component {
     onChange = event => {
       this.props.onChange(
-        this.props.keyChain,
+        this.props.valueKeyChain,
         event
       )
     }
 
     fullType() {
-      const type = access(this.props.schema, this.props.keyChain)
+      const type = access(this.props.schema, this.props.schemaKeyChain)
 
       if (! type) {
         console.error('Schema:', this.props.schema)
-        console.error('Key chain:', this.props.keyChain)
+        console.error('Key chain:', this.props.schemaKeyChain)
         throw Error('Invalid type: ' + type)
       }
 
@@ -83,12 +83,26 @@ export default function JsonForm(options = {}) {
       }
     }
 
+    isCustomArray() {
+      return (
+        this.typeName() === '$array'
+        && typeof this.type()[0] === 'symbol'
+      )
+    }
+
+    customArrayType() {
+      return options.types[this.type()[0]]
+    }
+
     editor() {
+      if (this.isCustomArray()) {
+        return this.customArrayType()
+      }
       return options.types[this.typeName()]
     }
 
     value() {
-      const value = access(this.props.value, this.props.keyChain)
+      const value = access(this.props.value, this.props.valueKeyChain)
 
       switch (this.typeName()) {
         case '$object':
@@ -114,9 +128,10 @@ export default function JsonForm(options = {}) {
         children.push(
           <SubEditor
             key={key}
-            keyChain={this.props.keyChain.concat([key])}
+            schemaKeyChain={this.props.schemaKeyChain.concat([key])}
+            valueKeyChain={this.props.valueKeyChain.concat([key])}
             onChange={this.props.onChange}
-            value={value[key]}
+            value={this.props.value}
             Editor={SubEditor}
             schema={this.props.schema}
           />
@@ -131,12 +146,18 @@ export default function JsonForm(options = {}) {
       const value = this.value()
 
       for (let i = 0; i < value.length; i++) {
+        const nextKeyChain = this.props.schemaKeyChain
+          .concat([this.isCustomArray() ? '1' : '0'])
+        const nextValueKeyChain = this.props.valueKeyChain
+          .concat([i])
+
         children.push(
           <SubEditor
             key={i+'/'+value.length}
-            keyChain={this.props.keyChain.concat([0])}
+            schemaKeyChain={nextKeyChain}
+            valueKeyChain={nextValueKeyChain}
             onChange={this.props.onChange}
-            value={value[i]}
+            value={this.props.value}
             Editor={SubEditor}
             schema={this.props.schema}
           />
@@ -163,11 +184,8 @@ export default function JsonForm(options = {}) {
       if (fullType && fullType.$label)
         return fullType.$label
 
-      let label = this.props.keyChain[this.props.keyChain.length - 1]
+      let label = this.props.schemaKeyChain[this.props.schemaKeyChain.length - 1]
       const result = []
-
-      if (! label)
-        return ''
 
       result.push(label[0].toUpperCase())
 
@@ -193,7 +211,8 @@ export default function JsonForm(options = {}) {
       return (
         <Editor
           onChange={this.onChange}
-          keyChain={this.props.keyChain}
+          schemaKeyChain={this.props.schemaKeyChain}
+          valueKeyChain={this.props.valueKeyChain}
           schema={this.props.schema}
           label={this.label()}
           value={this.value()}
@@ -208,9 +227,10 @@ export default function JsonForm(options = {}) {
       if (this.typeName() !== '$array')
         throw Error('Invalid type for add')
 
-      const array = (access(this.props.value, this.props.keyChain) || options.createArray())
+      const array = (access(this.props.value, this.props.schemaKeyChain) || options.createArray())
         .concat(null)
-      const newValue = deepSet(this.props.value, this.props.keyChain, array)
+
+      const newValue = deepSet(this.props.value, this.props.valueKeyChain, array)
 
       this.props.originalOnChange(newValue)
     }
@@ -219,8 +239,8 @@ export default function JsonForm(options = {}) {
   return class Editor extends React.Component {
     static SubEditor = SubEditor
 
-    onChange = (keyChain, event) => {
-      const nextValue = deepSet(this.props.value, keyChain, event.target.value)
+    onChange = (valueKeyChain, event) => {
+      const nextValue = deepSet(this.props.value, valueKeyChain, event.target.value)
       this.props.onChange(nextValue)
     }
 
@@ -228,7 +248,8 @@ export default function JsonForm(options = {}) {
       return Object.keys(schema).map(key =>
         <SubEditor
           key={key}
-          keyChain={[key]}
+          schemaKeyChain={[key]}
+          valueKeyChain={[key]}
           onChange={this.onChange}
           originalOnChange={this.props.onChange}
           value={this.props.value}
