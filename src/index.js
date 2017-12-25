@@ -1,10 +1,7 @@
 import deepSet from './deepSet'
 import access from './access'
+import typeOf from './typeOf'
 import React from 'react'
-
-const typeOf = x => Object.prototype.toString.call(x)
-  .slice(8, -1)
-  .toLowerCase()
 
 function isArrayLike(object) {
   return (
@@ -36,16 +33,15 @@ export default function JsonForm(options = {}) {
   if (! options.types.$object)
     options.types.$object = ({ children }) => (<div>{children}</div>)
 
-  if (options.types.$array.defaultValue == null)
-    options.types.$array.defaultValue = options.createArray()
+  options.types.$array.defaultValue = options.createArray()
 
-  if (options.types.$object.defaultValue == null)
-    options.types.$object.defaultValue = {}
+  options.types.$object.defaultValue = {}
 
   class SubEditor extends React.Component {
     onChange = event => {
       this.props.onChange(
         this.props.valueKeyChain,
+        this.props.schemaKeyChain,
         event
       )
     }
@@ -124,7 +120,6 @@ export default function JsonForm(options = {}) {
 
     objectChildren() {
       const children = []
-      const value = this.value()
 
       for (const key of Object.keys(this.type())) {
         children.push(
@@ -232,7 +227,7 @@ export default function JsonForm(options = {}) {
       const array = (access(this.props.value, this.props.schemaKeyChain) || options.createArray())
         .concat(null)
 
-      const newValue = deepSet(this.props.value, this.props.valueKeyChain, array)
+      const newValue = deepSet(this.props.value, this.props.valueKeyChain, array, this.props.schemaKeyChain, this.props.schema)
 
       this.props.originalOnChange(newValue)
     }
@@ -241,8 +236,8 @@ export default function JsonForm(options = {}) {
   return class Editor extends React.Component {
     static SubEditor = SubEditor
 
-    onChange = (valueKeyChain, event) => {
-      const nextValue = deepSet(this.props.value, valueKeyChain, event.target.value)
+    onChange = (valueKeyChain, schemaKeyChain, event) => {
+      const nextValue = deepSet(this.props.value, valueKeyChain, event.target.value, schemaKeyChain, this.props.schema)
       this.props.onChange(nextValue)
     }
 
