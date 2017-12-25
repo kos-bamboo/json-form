@@ -17,7 +17,7 @@ const Form = JsonForm({
   }
 })
 
-describe('explicit labels', () => {
+describe('labels', () => {
   it('uses the keys as labels by default', () => {
     const schema = {
       someTitle: 'string'
@@ -43,7 +43,7 @@ describe('explicit labels', () => {
       const schema = {
         someTitle: {
           $type: 'string',
-          $label: 'My title',
+          $label: 'MY TITLE',
         }
       }
 
@@ -65,7 +65,7 @@ describe('explicit labels', () => {
       expect(wrapper.html()).toBe(
         '<div>' +
         /**/'<label>' +
-        /**//**/'<div>My title</div>' +
+        /**//**/'<div>MY TITLE</div>' +
         /**//**/'<input>' +
         /**/'</label>' +
         '</div>'
