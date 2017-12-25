@@ -33,12 +33,14 @@ export default function JsonForm(options = {}) {
       </div>
   }
 
-  if (! options.types.$object) {
-    options.types.$object = ({ children }) => <div>{children}</div>
-  }
+  if (! options.types.$object)
+    options.types.$object = ({ children }) => (<div>{children}</div>)
 
-  options.types.$array.defaultValue = options.createArray()
-  options.types.$object.defaultValue = {}
+  if (options.types.$array.defaultValue == null)
+    options.types.$array.defaultValue = options.createArray()
+
+  if (options.types.$object.defaultValue == null)
+    options.types.$object.defaultValue = {}
 
   class SubEditor extends React.Component {
     onChange = event => {

@@ -2,6 +2,9 @@
 This package can be used to generate forms from a JSON object.
 It has 100% test coverage. Contributions are welcome!
 
+# Note
+This is still experimental.
+
 ## Example
 
 ```javascript
