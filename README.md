@@ -1,7 +1,6 @@
 # @adrianhelvik/json-form
 This package can be used to generate forms from a JSON object.
-It is still a work in progress. It has 100% test coverage and
-I plan to keep it that way. Contributions are welcome!
+It has 100% test coverage. Contributions are welcome!
 
 ## Example
 
