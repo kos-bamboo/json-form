@@ -1,3 +1,4 @@
+import pluralize from 'pluralize'
 import deepSet from './deepSet'
 import access from './access'
 import typeOf from './typeOf'
@@ -18,11 +19,7 @@ function decamelizeAndUppercaseFirst(value) {
 }
 
 function singular(string) {
-  if (string.endsWith('es'))
-    return string.substring(0, string.length - 2)
-  if (string.endsWith('s'))
-    return string.substring(0, string.length - 1)
-  return string
+  return pluralize.singular(string)
 }
 
 function isArrayLike(object) {
