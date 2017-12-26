@@ -1,4 +1,8 @@
 # @adrianhelvik/json-form
+
+[![Build Status](https://travis-ci.org/adrianhelvik/json-form.svg?branch=master)](https://travis-ci.org/adrianhelvik/json-form)
+[![Coverage Status](https://coveralls.io/repos/github/adrianhelvik/json-form/badge.svg?branch=master)](https://coveralls.io/github/adrianhelvik/json-form?branch=master)
+
 This package can be used to generate forms from a JSON object.
 It has 100% test coverage. Contributions are welcome!
 
