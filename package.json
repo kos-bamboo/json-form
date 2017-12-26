@@ -1,6 +1,6 @@
 {
   "name": "@adrianhelvik/json-form",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "main": "dist/index.js",
   "license": "MIT",
   "repository": {
@@ -34,7 +34,7 @@
   "jest": {
     "setupTestFrameworkScriptFile": "./testSetup.js",
     "coverageThreshold": {
-      "global": {
+      "./src/**/*.js": {
         "branches": 100,
         "functions": 100,
         "lines": 100,
