@@ -21,5 +21,7 @@ export default (schema, value) => {
     />
   )
 
+  wrapper.getValue = () => value
+
   return wrapper
 }
