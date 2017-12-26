@@ -30,7 +30,8 @@
     "start": "jest --coverage --watch",
     "build": "babel src --out-dir dist",
     "prepublish": "npm test && npm run build",
-    "postpublish": "rm -r dist"
+    "postpublish": "rm -r dist",
+    "coveralls": "cat ./coverage/lcov.info | coveralls"
   },
   "jest": {
     "setupTestFrameworkScriptFile": "./testSetup.js",
