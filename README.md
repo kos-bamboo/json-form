@@ -20,7 +20,7 @@ const Form = JsonForm({
       {label}: <input onChange={onChange} value={value} />
     </div>
   ),
-  test: ({ onChange, value, label }) => (
+  text: ({ onChange, value, label }) => (
     <div>
       {label}: <textarea onChange={onChange} value={value} />
     </div>
