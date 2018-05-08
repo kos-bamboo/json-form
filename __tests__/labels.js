@@ -29,7 +29,7 @@ describe('labels', () => {
       '<div>' +
       /**/'<label>' +
       /**//**/'<div>Some title</div>' +
-      /**//**/'<input>' +
+      /**//**/'<input value="">' +
       /**/'</label>' +
       '</div>'
     )
@@ -66,7 +66,7 @@ describe('labels', () => {
         '<div>' +
         /**/'<label>' +
         /**//**/'<div>MY TITLE</div>' +
-        /**//**/'<input>' +
+        /**//**/'<input value="">' +
         /**/'</label>' +
         '</div>'
       )
