@@ -44,7 +44,7 @@ describe('Custom array editors', () => {
       types: {
         string: ({ onChange, value, label }) => (
           <div className="string">
-            {label}: <input value={value} onChange={onChange} />
+            {label}: <input value={value} onChange={e => onChange(e.target.value)} />
           </div>
         ),
         $object: ({ children }) => (<object-editor>{children}</object-editor>),

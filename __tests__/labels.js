@@ -6,7 +6,7 @@ const StringEditor = ({ onChange, value, label }) => (
   <div>
     <label>
       <div>{label}</div>
-      <input onChange={onChange} value={value} />
+      <input onChange={e => onChange(e.target.value)} value={value} />
     </label>
   </div>
 )

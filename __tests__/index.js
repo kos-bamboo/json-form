@@ -37,7 +37,7 @@ describe('json-form', () => {
   describe('single level', () => {
     it('creates the correct react elements', () => {
       const InputEditor = ({ onChange, value }) => (
-        <input onChange={onChange} />
+        <input onChange={e => onChange(e.target.value)} />
       )
 
       const Form = JsonForm({
@@ -81,6 +81,198 @@ describe('json-form', () => {
       input.simulate('change', { target: { value: 'Hello world' } })
       expect(wrapper.state('value').title).toBe('Hello world')
     })
+
+    describe('$computedProps', () => {
+      it('can be used without arguments', () => {
+        const InputEditor = ({ onChange, value, maxLength }) => (
+          <input
+            onChange={e => {
+              if (e.target.value.length >= maxLength)
+                e.target.value = e.target.value.slice(0, maxLength)
+              onChange(e.target.value)
+            }}
+          />
+        )
+
+        const Form = JsonForm({
+          types: {
+            input: InputEditor
+          }
+        })
+
+        class FormContainer extends React.Component {
+          state = {
+            value: {}
+          }
+
+          onChange = value => {
+            this.setState({ value })
+          }
+
+          render() {
+            return (
+              <Form
+                schema={{
+                  title: {
+                    $type: 'input',
+                    $computedProps() {
+                      return {
+                        maxLength: 3,
+                      }
+                    }
+                  }
+                }}
+                onChange={this.onChange}
+                value={this.state.value}
+              />
+            )
+          }
+        }
+
+        const wrapper = mount(<FormContainer />)
+
+        const input = wrapper
+          .find('input')
+          .first()
+
+        expect(input).toBeDefined()
+        expect(input.html()).toBe('<input>')
+        input.simulate('change', { target: { value: 'Hello world' } })
+        expect(wrapper.state('value').title).toBe('Hel')
+      })
+
+      it('takes options as the first parameter of $computedProps', () => {
+        const InputEditor = ({ onChange, value, maxLength }) => (
+          <input
+            className="input-editor"
+            onChange={e => {
+              if (e.target.value.length >= maxLength)
+                e.target.value = e.target.value.slice(0, maxLength)
+              onChange(e.target.value)
+            }}
+          />
+        )
+
+        const NumberEditor = ({ onChange, value }) => (
+          <input
+            className="number-editor"
+            onChange={e => {
+              if (e.target.value === '')
+                onChange(null)
+              else
+                onChange(parseInt(e.target.value, 10))
+            }}
+          />
+        )
+
+        const Form = JsonForm({
+          types: {
+            input: InputEditor,
+            number: NumberEditor,
+          }
+        })
+
+        class FormContainer extends React.Component {
+          state = {
+            value: {}
+          }
+
+          onChange = value => {
+            this.setState({ value })
+          }
+
+          render() {
+            return (
+              <Form
+                schema={{
+                  maxLength: 'number',
+                  title: {
+                    $type: 'input',
+                    $computedProps({ maxLength }) {
+                      return { maxLength }
+                    }
+                  }
+                }}
+                onChange={this.onChange}
+                value={this.state.value}
+              />
+            )
+          }
+        }
+
+        const wrapper = mount(<FormContainer />)
+
+        const numberEditor = wrapper
+          .find('.number-editor')
+          .first()
+        expect(numberEditor).toBeDefined()
+
+        const inputEditor = wrapper
+          .find('.input-editor')
+          .first()
+        expect(inputEditor).toBeDefined()
+
+        numberEditor.simulate('change', { target: { value: '5' } })
+        inputEditor.simulate('change', { target: { value: 'foobar' } })
+        expect(wrapper.state('value').title).toBe('fooba')
+      })
+
+      it('can take another input as its second parmeter', () => {
+        const InputEditor = ({ onChange, value, maxLength }) => (
+          <input
+            className="input-editor"
+            onChange={e => {
+              if (e.target.value.length >= maxLength)
+                e.target.value = e.target.value.slice(0, maxLength)
+              onChange(e.target.value)
+            }}
+          />
+        )
+
+        const Form = JsonForm({
+          types: {
+            input: InputEditor,
+          }
+        })
+
+        class FormContainer extends React.Component {
+          state = {
+            value: {}
+          }
+
+          onChange = value => {
+            this.setState({ value })
+          }
+
+          render() {
+            return (
+              <Form
+                schema={{
+                  title: {
+                    $type: 'input',
+                    $computedProps(_, maxLength) {
+                      return { maxLength }
+                    }
+                  }
+                }}
+                onChange={this.onChange}
+                value={this.state.value}
+                computedPropsRest={[3]}
+              />
+            )
+          }
+        }
+
+        const wrapper = mount(<FormContainer />)
+
+        const inputEditor = wrapper
+          .find('.input-editor')
+          .first()
+
+        inputEditor.simulate('change', { target: { value: 'foobar' } })
+        expect(wrapper.state('value').title).toBe('foo')
+      })
+    })
   })
 
   describe('multi level', () => {
@@ -90,7 +282,7 @@ describe('json-form', () => {
 
       beforeEach(() => {
         const InputEditor = ({ onChange, value = '' }) => (
-          <input onChange={onChange} value={value} />
+          <input onChange={e => onChange(e.target.value)} value={value} />
         )
         InputEditor.defaultValue = ''
         const ObjectEditor = ({ children }) => (
@@ -180,7 +372,7 @@ describe('json-form', () => {
 
       beforeEach(() => {
         types = {
-          input: ({ value, onChange }) => <input className="input" value={value} onChange={onChange}/>,
+          input: ({ value, onChange }) => <input className="input" value={value} onChange={e => onChange(e.target.value)}/>,
           $object: ({ children }) => <div className="object">{children}</div>,
           $array: ({ children, add }) => <div className="array">{children}<button onClick={add}>Add item</button></div>,
         }
@@ -400,6 +592,7 @@ describe('json-form', () => {
         SubEditor.prototype.render.call({
           editor: () => {},
           children: () => {},
+          computedProps: () => {},
           typeName: () => 'foobar',
         })
       }).toThrow('No type with the name "foobar" has been registered')

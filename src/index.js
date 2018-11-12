@@ -57,11 +57,11 @@ export default function JsonForm(options = {}) {
   options.types.$object.defaultValue = {}
 
   class SubEditor extends React.Component {
-    onChange = event => {
+    onChange = value => {
       this.props.onChange(
         this.props.valueKeyChain,
         this.props.schemaKeyChain,
-        event
+        value
       )
     }
 
@@ -231,9 +231,21 @@ export default function JsonForm(options = {}) {
       return decamelizeAndUppercaseFirst(label)
     }
 
+    computedProps() {
+      const type = this.fullType()
+      if (typeof type.$computedProps === 'function') {
+        const rest = isArrayLike(this.props.computedPropsRest)
+          ? this.props.computedPropsRest
+          : []
+        return type.$computedProps(this.props.value, ...rest)
+      }
+      return {}
+    }
+
     render() {
       const Editor = this.editor()
       const children = this.children()
+      const computedProps = this.computedProps()
 
       if (! Editor)
         throw Error(`No type with the name "${this.typeName()}" has been registered`)
@@ -249,6 +261,7 @@ export default function JsonForm(options = {}) {
           Editor={SubEditor}
           children={children}
           add={this.add}
+          {...computedProps}
         />
       )
     }
@@ -269,8 +282,8 @@ export default function JsonForm(options = {}) {
   return class Editor extends React.Component {
     static SubEditor = SubEditor
 
-    onChange = (valueKeyChain, schemaKeyChain, event) => {
-      const nextValue = deepSet(this.props.value, valueKeyChain, event.target.value, schemaKeyChain, this.props.schema)
+    onChange = (valueKeyChain, schemaKeyChain, value) => {
+      const nextValue = deepSet(this.props.value, valueKeyChain, value, schemaKeyChain, this.props.schema)
       this.props.onChange(nextValue)
     }
 
@@ -282,6 +295,7 @@ export default function JsonForm(options = {}) {
           valueKeyChain={[key]}
           onChange={this.onChange}
           originalOnChange={this.props.onChange}
+          computedPropsRest={this.props.computedPropsRest}
           value={this.props.value}
           Editor={SubEditor}
           schema={schema}
