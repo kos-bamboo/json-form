@@ -17,12 +17,12 @@ import JsonForm from '@adrianhelvik/json-form'
 const Form = JsonForm({
   string: ({ onChange, value, label }) => (
     <div>
-      {label}: <input onChange={onChange} value={value} />
+      {label}: <input onChange={e => onChange(e.target.value)} value={value} />
     </div>
   ),
   text: ({ onChange, value, label }) => (
     <div>
-      {label}: <textarea onChange={onChange} value={value} />
+      {label}: <textarea onChange={e => onChange(e.target.value)} value={value} />
     </div>
   )
 })
@@ -102,6 +102,55 @@ const schema = {
   }]
 }
 ```
+
+### Dynamic editors with $computedProps
+
+It is often necessary to change the value of something based
+on an independent variable. A rather poor, but quite simple
+example of this is an input field with a max length.
+
+```javascript
+const types = {
+  string({ value, onChange, maxLength }) {
+    return (
+      <input
+        value={value}
+        onChange={e => {
+          if (maxLength != null && e.target.value.length >= maxLength)
+            e.target.value = e.target.value.slice(0, maxLength)
+          onChange(e.target.value)
+        }}
+      />
+    )
+  },
+  number({ value, onChange }) {
+    return (
+      <input
+        type="number"
+        value={value == null ? '' : String(value)}
+        onChange={e => {
+          onChange(parseInt(e.target.value, 10))
+        }}
+      />
+    )
+  }
+}
+const schema = {
+  text: {
+    $type: 'string',
+    $computedProps({ maxLength }) {
+      return { maxLength }
+    }
+  },
+  maxLength: 'number',
+}
+```
+
+Additionally you can use the prop `computedPropsRest` on the
+form component. (The one returned from JsonForm). this prop
+should be an array. `$computedProps` is called with the value
+as its first argument and the `computedPropsRest` as the
+rest argument. See the tests for more info on this.
 
 # Licence
 MIT, see LICENCE file
