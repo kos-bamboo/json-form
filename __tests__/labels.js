@@ -5,7 +5,7 @@ import React from 'react'
 const StringEditor = ({ onChange, value, label }) => (
   <div>
     <label>
-      <div>{label}</div>
+      <div className="label-text">{label}</div>
       <input onChange={e => onChange(e.target.value)} value={value} />
     </label>
   </div>
@@ -25,14 +25,11 @@ describe('labels', () => {
 
     const wrapper = mount(<Form schema={schema} />)
 
-    expect(wrapper.html()).toBe(
-      '<div>' +
-      /**/'<label>' +
-      /**//**/'<div>Some title</div>' +
-      /**//**/'<input value="">' +
-      /**/'</label>' +
-      '</div>'
-    )
+    const labelText = wrapper
+      .find('.label-text')
+      .text()
+
+    expect(labelText).toBe('Some title')
   })
 
   describe('setting explicit labels', () => {
@@ -59,17 +56,6 @@ describe('labels', () => {
         .simulate('change', { target: { value: 'Hello world' } })
 
       expect(value).toEqual({ someTitle: 'Hello world' })
-    })
-
-    it('renders the correct html', () => {
-      expect(wrapper.html()).toBe(
-        '<div>' +
-        /**/'<label>' +
-        /**//**/'<div>MY TITLE</div>' +
-        /**//**/'<input value="">' +
-        /**/'</label>' +
-        '</div>'
-      )
     })
   })
 })
