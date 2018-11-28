@@ -15,16 +15,18 @@ This is still experimental.
 import JsonForm from '@adrianhelvik/json-form'
 
 const Form = JsonForm({
-  string: ({ onChange, value, label }) => (
-    <div>
-      {label}: <input onChange={e => onChange(e.target.value)} value={value} />
-    </div>
-  ),
-  text: ({ onChange, value, label }) => (
-    <div>
-      {label}: <textarea onChange={e => onChange(e.target.value)} value={value} />
-    </div>
-  )
+  types: {
+    string: ({ onChange, value, label }) => (
+      <div>
+        {label}: <input onChange={e => onChange(e.target.value)} value={value} />
+      </div>
+    ),
+    text: ({ onChange, value, label }) => (
+      <div>
+        {label}: <textarea onChange={e => onChange(e.target.value)} value={value} />
+      </div>
+    )
+  }
 })
 
 const schema = {
