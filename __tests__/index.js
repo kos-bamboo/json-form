@@ -339,7 +339,7 @@ describe('json-form', () => {
         })
         const schema = { general: { title: 'input' } }
         const wrapper = mount(
-          <Form schema={schema} value={value} />
+          <Form schema={schema} value={value} onChange={() => {}} />
         )
 
         expect(wrapper.html()).toBe(
@@ -605,5 +605,23 @@ describe('json-form', () => {
         instance.add()
       }).toThrow('Invalid type for add')
     })
+  })
+
+  test('when onChange isn\'t provided a nice error message is shown', async () => {
+    const Form = JsonForm({
+      types: {
+        string({ value, onChange }) {
+          return (
+            <input value={value} onChange={e => onChange(e.target.value)} />
+          )
+        }
+      }
+    })
+
+    expect(() => {
+      Form.prototype.render.call({
+        props: {}
+      })
+    }).toThrow(/onChange function/)
   })
 })

@@ -37,7 +37,7 @@ describe('object editor', () => {
       ]
     }
 
-    const wrapper = mount(<Form schema={schema} value={value} />)
+    const wrapper = mount(<Form schema={schema} value={value} onChange={() => {}} />)
 
     expect(wrapper.html()).toBe(
       '<array-editor>'+

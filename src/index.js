@@ -213,7 +213,7 @@ export default function JsonForm(options = {}) {
     label() {
       const parentType = this.parentType()
 
-      if (Array.isArray(parentType)) {
+      if (isArrayLike(parentType)) {
         return decamelizeAndUppercaseFirst(
           singular(
             this.props.schemaKeyChain[this.props.schemaKeyChain.length - 2]
@@ -304,6 +304,8 @@ export default function JsonForm(options = {}) {
     }
 
     render() {
+      if (typeof this.props.onChange !== 'function')
+        throw Error('You must pass an onChange function to the editor created by @adrianhelvik/json-form')
       return this.createEditor(this.props.schema)
     }
   }

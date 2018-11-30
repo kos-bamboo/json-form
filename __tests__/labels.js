@@ -23,7 +23,7 @@ describe('labels', () => {
       someTitle: 'string'
     }
 
-    const wrapper = mount(<Form schema={schema} />)
+    const wrapper = mount(<Form schema={schema} onChange={() => {}} />)
 
     const labelText = wrapper
       .find('.label-text')
