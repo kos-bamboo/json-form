@@ -1,6 +1,6 @@
 {
   "name": "@adrianhelvik/json-form",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "main": "dist/index.js",
   "license": "MIT",
   "repository": {
@@ -11,25 +11,29 @@
     "babel-cli": "^6.26.0",
     "babel-jest": "^22.0.3",
     "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-react": "^6.24.1",
     "coveralls": "^3.0.0",
     "enzyme": "^3.2.0",
     "enzyme-adapter-react-16": "^1.1.1",
+    "eslint": "^8.8.0",
+    "eslint-plugin-react": "^7.28.0",
     "jest": "^22.0.3",
     "jest-enzyme": "^4.0.1",
-    "react": "^16.2.0",
-    "react-dom": "^16.2.0",
+    "react": "16",
+    "react-dom": "16",
     "react-test-utils": "^0.0.1"
   },
   "peerDependencies": {
-    "react": "^16.2.0"
+    "react": "16"
   },
   "scripts": {
     "test": "jest --coverage",
-    "start": "jest --coverage --watch",
+    "start": "jest --watch",
     "build": "babel src --out-dir dist",
-    "prepublish": "npm test && npm run build",
+    "lint": "eslint 'src/**/*.js'",
+    "prepublish": "npm run lint && npm run test && npm run build",
     "postpublish": "rm -r dist",
     "coveralls": "cat ./coverage/lcov.info | coveralls"
   },
@@ -46,7 +50,6 @@
     }
   },
   "dependencies": {
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "pluralize": "^7.0.0"
   }
 }

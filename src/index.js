@@ -24,51 +24,59 @@ function singular(string) {
 
 function isArrayLike(object) {
   return (
-    object
-    && typeof object === 'object'
-    && typeof object.length === 'number'
-    && typeof object.push === 'function'
-    && typeof object.concat === 'function'
+    object &&
+    typeof object === 'object' &&
+    typeof object.length === 'number' &&
+    typeof object.push === 'function' &&
+    typeof object.concat === 'function'
   )
+}
+
+const ArrayEditor = ({ children, add }) => {
+  return (
+    <div>
+      {children}
+      <button onClick={add}>Add item</button>
+    </div>
+  )
+}
+
+const ObjectEditor = ({ children }) => {
+  return <div>{children}</div>
 }
 
 export default function JsonForm(options = {}) {
   options = { ...options }
 
-  if (! options.types)
-    throw Error('"types" is a required option')
+  if (!options.types) throw Error('"types" is a required option')
 
-  if (! options.createArray)
-    options.createArray = () => ([])
+  if (!options.createArray) options.createArray = () => []
 
-  if (! options.types.$array) {
-    options.types.$array = ({ children, add }) => 
-      <div>
-        {children}
-        <button onClick={add}>Add item</button>
-      </div>
+  if (!options.types.$array) {
+    options.types.$array = ArrayEditor
   }
 
-  if (! options.types.$object)
-    options.types.$object = ({ children }) => (<div>{children}</div>)
+  if (!options.types.$object) {
+    options.types.$object = ObjectEditor
+  }
 
   options.types.$array.defaultValue = options.createArray()
 
   options.types.$object.defaultValue = {}
 
   class SubEditor extends React.Component {
-    onChange = value => {
+    onChange = (value) => {
       this.props.onChange(
         this.props.valueKeyChain,
         this.props.schemaKeyChain,
-        value
+        value,
       )
     }
 
     fullType() {
       const type = access(this.props.schema, this.props.schemaKeyChain)
 
-      if (! type) {
+      if (!type) {
         console.error('Schema:', this.props.schema)
         console.error('Key chain:', this.props.schemaKeyChain)
         throw Error('Invalid type: ' + type)
@@ -79,8 +87,7 @@ export default function JsonForm(options = {}) {
 
     type() {
       const type = this.fullType()
-      if (type.$type)
-        return type.$type
+      if (type.$type) return type.$type
       return type
     }
 
@@ -88,8 +95,7 @@ export default function JsonForm(options = {}) {
       const type = this.type()
       switch (typeOf(type)) {
         case 'object':
-          if (isArrayLike(type))
-            return '$array'
+          if (isArrayLike(type)) return '$array'
           return '$object'
         case 'array':
           return '$array'
@@ -101,14 +107,15 @@ export default function JsonForm(options = {}) {
     }
 
     isCustomArray() {
-      return (
-        this.typeName() === '$array'
-        && typeof this.type()[0] === 'symbol'
-      )
+      return this.typeName() === '$array' && typeof this.type()[0] === 'symbol'
     }
 
     customArrayType() {
-      return options.types[this.type()[0]]
+      const arrayType = this.type()[0]
+      if (!options.types[arrayType]) {
+        throw Error(`Missing custom array editor for ${String(arrayType)}`)
+      }
+      return options.types[arrayType]
     }
 
     editor() {
@@ -123,16 +130,13 @@ export default function JsonForm(options = {}) {
 
       switch (this.typeName()) {
         case '$object':
-          if (typeOf(value) !== 'object')
-            return {}
+          if (typeOf(value) !== 'object') return {}
           return value
         case '$array':
-          if (! isArrayLike(value))
-            return options.createArray()
+          if (!isArrayLike(value)) return options.createArray()
           return value
         default:
-          if (value === undefined)
-            return this.editor().defaultValue
+          if (value === undefined) return this.editor().defaultValue
           return value
       }
     }
@@ -151,7 +155,7 @@ export default function JsonForm(options = {}) {
             value={this.props.value}
             Editor={SubEditor}
             schema={this.props.schema}
-          />
+          />,
         )
       }
 
@@ -163,14 +167,14 @@ export default function JsonForm(options = {}) {
       const value = this.value()
 
       for (let i = 0; i < value.length; i++) {
-        const nextKeyChain = this.props.schemaKeyChain
-          .concat([this.isCustomArray() ? '1' : '0'])
-        const nextValueKeyChain = this.props.valueKeyChain
-          .concat([i])
+        const nextKeyChain = this.props.schemaKeyChain.concat([
+          this.isCustomArray() ? '1' : '0',
+        ])
+        const nextValueKeyChain = this.props.valueKeyChain.concat([i])
 
         children.push(
           <SubEditor
-            key={i+'/'+value.length}
+            key={i + '/' + value.length}
             schemaKeyChain={nextKeyChain}
             valueKeyChain={nextValueKeyChain}
             originalOnChange={this.props.originalOnChange}
@@ -178,7 +182,7 @@ export default function JsonForm(options = {}) {
             value={this.props.value}
             Editor={SubEditor}
             schema={this.props.schema}
-          />
+          />,
         )
       }
 
@@ -197,15 +201,10 @@ export default function JsonForm(options = {}) {
     }
 
     parentType() {
-      const type = access(this.props.schema, this.props.schemaKeyChain.slice(0, -1))
-
-      /*
-      if (! type) {
-        console.error('Schema:', this.props.schema)
-        console.error('Key chain:', this.props.schemaKeyChain)
-        throw Error('Invalid type: ' + type)
-      }
-      */
+      const type = access(
+        this.props.schema,
+        this.props.schemaKeyChain.slice(0, -1),
+      )
 
       return type
     }
@@ -216,17 +215,22 @@ export default function JsonForm(options = {}) {
       if (isArrayLike(parentType)) {
         return decamelizeAndUppercaseFirst(
           singular(
-            this.props.schemaKeyChain[this.props.schemaKeyChain.length - 2]
-          ) + ' ' + (Number(this.props.valueKeyChain[this.props.valueKeyChain.length - 1]) + 1)
+            this.props.schemaKeyChain[this.props.schemaKeyChain.length - 2],
+          ) +
+            ' ' +
+            (Number(
+              this.props.valueKeyChain[this.props.valueKeyChain.length - 1],
+            ) +
+              1),
         )
       }
 
       const fullType = this.fullType()
 
-      if (fullType && fullType.$label)
-        return fullType.$label
+      if (fullType && fullType.$label) return fullType.$label
 
-      let label = this.props.schemaKeyChain[this.props.schemaKeyChain.length - 1]
+      let label =
+        this.props.schemaKeyChain[this.props.schemaKeyChain.length - 1]
 
       return decamelizeAndUppercaseFirst(label)
     }
@@ -247,8 +251,10 @@ export default function JsonForm(options = {}) {
       const children = this.children()
       const computedProps = this.computedProps()
 
-      if (! Editor)
-        throw Error(`No type with the name "${this.typeName()}" has been registered`)
+      if (!Editor)
+        throw Error(
+          `No type with the name "${this.typeName()}" has been registered`,
+        )
 
       return (
         <Editor
@@ -259,21 +265,29 @@ export default function JsonForm(options = {}) {
           label={this.label()}
           value={this.value()}
           Editor={SubEditor}
-          children={children}
           add={this.add}
           {...computedProps}
-        />
+        >
+          {children}
+        </Editor>
       )
     }
 
     add = () => {
-      if (this.typeName() !== '$array')
-        throw Error('Invalid type for add')
+      if (this.typeName() !== '$array') throw Error('Invalid type for add')
 
-      const array = (access(this.props.value, this.props.schemaKeyChain) || options.createArray())
-        .concat(null)
+      const array = (
+        access(this.props.value, this.props.schemaKeyChain) ||
+        options.createArray()
+      ).concat(null)
 
-      const newValue = deepSet(this.props.value, this.props.valueKeyChain, array, this.props.schemaKeyChain, this.props.schema)
+      const newValue = deepSet(
+        this.props.value,
+        this.props.valueKeyChain,
+        array,
+        this.props.schemaKeyChain,
+        this.props.schema,
+      )
 
       this.props.originalOnChange(newValue)
     }
@@ -283,12 +297,18 @@ export default function JsonForm(options = {}) {
     static SubEditor = SubEditor
 
     onChange = (valueKeyChain, schemaKeyChain, value) => {
-      const nextValue = deepSet(this.props.value, valueKeyChain, value, schemaKeyChain, this.props.schema)
+      const nextValue = deepSet(
+        this.props.value,
+        valueKeyChain,
+        value,
+        schemaKeyChain,
+        this.props.schema,
+      )
       this.props.onChange(nextValue)
     }
 
     createEditor(schema) {
-      return Object.keys(schema).map(key =>
+      return Object.keys(schema).map((key) => (
         <SubEditor
           key={key}
           schemaKeyChain={[key]}
@@ -300,12 +320,14 @@ export default function JsonForm(options = {}) {
           Editor={SubEditor}
           schema={schema}
         />
-      )
+      ))
     }
 
     render() {
       if (typeof this.props.onChange !== 'function')
-        throw Error('You must pass an onChange function to the editor created by @adrianhelvik/json-form')
+        throw Error(
+          'You must pass an onChange function to the editor created by @adrianhelvik/json-form',
+        )
       return this.createEditor(this.props.schema)
     }
   }

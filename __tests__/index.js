@@ -6,8 +6,7 @@ class FauxArray {
   length = 0
 
   constructor(items) {
-    for (let i = 0; i < items.length; i++)
-      this.push(items[i])
+    for (let i = 0; i < items.length; i++) this.push(items[i])
   }
 
   push(item) {
@@ -16,8 +15,7 @@ class FauxArray {
 
   concat(item) {
     const items = []
-    for (let i = 0; i < this.length; i++)
-      items.push(this[i])
+    for (let i = 0; i < this.length; i++) items.push(this[i])
     items.push(item)
     return new this.constructor(items)
   }
@@ -37,25 +35,33 @@ describe('json-form', () => {
   describe('single level', () => {
     it('creates the correct react elements', () => {
       const InputEditor = ({ onChange, value }) => (
-        <input onChange={e => onChange(e.target.value)} />
+        <input onChange={(e) => onChange(e.target.value)} />
+      )
+      const NumberEditor = ({ onChange, value }) => (
+        <input
+          type="number"
+          onChange={(e) => onChange(parseInt(e.target.value, 10))}
+        />
       )
 
       const Form = JsonForm({
         types: {
+          number: NumberEditor,
           input: InputEditor,
-        }
+        },
       })
 
       const schema = {
-        title: 'input'
+        title: 'input',
+        amount: 'number',
       }
 
       class FormContainer extends React.Component {
         state = {
-          value: {}
+          value: {},
         }
 
-        onChange = value => {
+        onChange = (value) => {
           this.setState({ value })
         }
 
@@ -63,8 +69,10 @@ describe('json-form', () => {
           return (
             <Form
               schema={schema}
-              onChange={this.onChange}
-              value={this.state}
+              onChange={(value) => this.setState({ value })}
+              value={{
+                ...this.state,
+              }}
             />
           )
         }
@@ -72,9 +80,7 @@ describe('json-form', () => {
 
       const wrapper = mount(<FormContainer />)
 
-      const input = wrapper
-        .find('input')
-        .first()
+      const input = wrapper.find('input').first()
 
       expect(input).toBeDefined()
       expect(input.html()).toBe('<input>')
@@ -82,11 +88,58 @@ describe('json-form', () => {
       expect(wrapper.state('value').title).toBe('Hello world')
     })
 
+    it('preserves the editor elements', async () => {
+      const InputEditor = ({ onChange, value }) => {
+        return <input onChange={(e) => onChange(e.target.value)} />
+      }
+
+      const Form = JsonForm({
+        types: {
+          input: InputEditor,
+        },
+      })
+
+      const schema = {
+        title: 'input',
+      }
+
+      function FormContainer() {
+        const [value, setValue] = React.useState({})
+
+        const onChange = (value) => {
+          this.setState({ value })
+        }
+
+        return (
+          <React.Fragment>
+            <Form schema={schema} onChange={setValue} value={value} />
+            <div>value.title is: {value.title}</div>
+          </React.Fragment>
+        )
+      }
+
+      const wrapper = mount(<FormContainer />)
+
+      const input = wrapper.find('input').first()
+      const text = wrapper.find('div').first()
+
+      const inputNode = input.getDOMNode()
+
+      inputNode.focus()
+
+      input.simulate('change', { target: { value: 'a' } })
+      input.simulate('change', { target: { value: 'b' } })
+      input.simulate('change', { target: { value: 'c' } })
+
+      expect(document.activeElement).toBe(inputNode)
+      expect(text.text()).toBe('value.title is: c')
+    })
+
     describe('$computedProps', () => {
       it('can be used without arguments', () => {
         const InputEditor = ({ onChange, value, maxLength }) => (
           <input
-            onChange={e => {
+            onChange={(e) => {
               if (e.target.value.length >= maxLength)
                 e.target.value = e.target.value.slice(0, maxLength)
               onChange(e.target.value)
@@ -96,16 +149,16 @@ describe('json-form', () => {
 
         const Form = JsonForm({
           types: {
-            input: InputEditor
-          }
+            input: InputEditor,
+          },
         })
 
         class FormContainer extends React.Component {
           state = {
-            value: {}
+            value: {},
           }
 
-          onChange = value => {
+          onChange = (value) => {
             this.setState({ value })
           }
 
@@ -119,8 +172,8 @@ describe('json-form', () => {
                       return {
                         maxLength: 3,
                       }
-                    }
-                  }
+                    },
+                  },
                 }}
                 onChange={this.onChange}
                 value={this.state.value}
@@ -131,9 +184,7 @@ describe('json-form', () => {
 
         const wrapper = mount(<FormContainer />)
 
-        const input = wrapper
-          .find('input')
-          .first()
+        const input = wrapper.find('input').first()
 
         expect(input).toBeDefined()
         expect(input.html()).toBe('<input>')
@@ -145,7 +196,7 @@ describe('json-form', () => {
         const InputEditor = ({ onChange, value, maxLength }) => (
           <input
             className="input-editor"
-            onChange={e => {
+            onChange={(e) => {
               if (e.target.value.length >= maxLength)
                 e.target.value = e.target.value.slice(0, maxLength)
               onChange(e.target.value)
@@ -156,11 +207,9 @@ describe('json-form', () => {
         const NumberEditor = ({ onChange, value }) => (
           <input
             className="number-editor"
-            onChange={e => {
-              if (e.target.value === '')
-                onChange(null)
-              else
-                onChange(parseInt(e.target.value, 10))
+            onChange={(e) => {
+              if (e.target.value === '') onChange(null)
+              else onChange(parseInt(e.target.value, 10))
             }}
           />
         )
@@ -169,15 +218,15 @@ describe('json-form', () => {
           types: {
             input: InputEditor,
             number: NumberEditor,
-          }
+          },
         })
 
         class FormContainer extends React.Component {
           state = {
-            value: {}
+            value: {},
           }
 
-          onChange = value => {
+          onChange = (value) => {
             this.setState({ value })
           }
 
@@ -190,8 +239,8 @@ describe('json-form', () => {
                     $type: 'input',
                     $computedProps({ maxLength }) {
                       return { maxLength }
-                    }
-                  }
+                    },
+                  },
                 }}
                 onChange={this.onChange}
                 value={this.state.value}
@@ -202,14 +251,10 @@ describe('json-form', () => {
 
         const wrapper = mount(<FormContainer />)
 
-        const numberEditor = wrapper
-          .find('.number-editor')
-          .first()
+        const numberEditor = wrapper.find('.number-editor').first()
         expect(numberEditor).toBeDefined()
 
-        const inputEditor = wrapper
-          .find('.input-editor')
-          .first()
+        const inputEditor = wrapper.find('.input-editor').first()
         expect(inputEditor).toBeDefined()
 
         numberEditor.simulate('change', { target: { value: '5' } })
@@ -221,7 +266,7 @@ describe('json-form', () => {
         const InputEditor = ({ onChange, value, maxLength }) => (
           <input
             className="input-editor"
-            onChange={e => {
+            onChange={(e) => {
               if (e.target.value.length >= maxLength)
                 e.target.value = e.target.value.slice(0, maxLength)
               onChange(e.target.value)
@@ -232,15 +277,15 @@ describe('json-form', () => {
         const Form = JsonForm({
           types: {
             input: InputEditor,
-          }
+          },
         })
 
         class FormContainer extends React.Component {
           state = {
-            value: {}
+            value: {},
           }
 
-          onChange = value => {
+          onChange = (value) => {
             this.setState({ value })
           }
 
@@ -252,8 +297,8 @@ describe('json-form', () => {
                     $type: 'input',
                     $computedProps(_, maxLength) {
                       return { maxLength }
-                    }
-                  }
+                    },
+                  },
                 }}
                 onChange={this.onChange}
                 value={this.state.value}
@@ -265,9 +310,7 @@ describe('json-form', () => {
 
         const wrapper = mount(<FormContainer />)
 
-        const inputEditor = wrapper
-          .find('.input-editor')
-          .first()
+        const inputEditor = wrapper.find('.input-editor').first()
 
         inputEditor.simulate('change', { target: { value: 'foobar' } })
         expect(wrapper.state('value').title).toBe('foo')
@@ -282,7 +325,7 @@ describe('json-form', () => {
 
       beforeEach(() => {
         const InputEditor = ({ onChange, value = '' }) => (
-          <input onChange={e => onChange(e.target.value)} value={value} />
+          <input onChange={(e) => onChange(e.target.value)} value={value} />
         )
         InputEditor.defaultValue = ''
         const ObjectEditor = ({ children }) => (
@@ -293,25 +336,25 @@ describe('json-form', () => {
           types: {
             input: InputEditor,
             $object: noObjectEditor ? null : ObjectEditor,
-          }
+          },
         })
 
         const schema = {
           general: {
-            title: 'input'
-          }
+            title: 'input',
+          },
         }
 
         class FormContainer extends React.Component {
           state = {
             value: {
               general: {
-                title: ''
-              }
-            }
+                title: '',
+              },
+            },
           }
 
-          onChange = value => {
+          onChange = (value) => {
             this.setState({ value })
           }
 
@@ -334,29 +377,22 @@ describe('json-form', () => {
         const value = {}
         const Form = JsonForm({
           types: {
-            input: () => <input />
-          }
+            input: () => <input />,
+          },
         })
         const schema = { general: { title: 'input' } }
         const wrapper = mount(
-          <Form schema={schema} value={value} onChange={() => {}} />
+          <Form schema={schema} value={value} onChange={() => {}} />,
         )
 
-        expect(wrapper.html()).toBe(
-          '<div>' +
-          /**/'<input>' +
-          '</div>'
-        )
+        expect(wrapper.html()).toBe('<div>' + /**/ '<input>' + '</div>')
       })
 
       it('can create object editors', () => {
-        const objectEditor = wrapper
-          .find('.object-editor')
+        const objectEditor = wrapper.find('.object-editor')
         expect(objectEditor.length).toBe(1)
 
-        const input = wrapper
-          .find('input')
-          .first()
+        const input = wrapper.find('input').first()
 
         expect(input.length).toBe(1)
         input.simulate('change', { target: { value: 'Hello world' } })
@@ -365,16 +401,24 @@ describe('json-form', () => {
     })
 
     describe('array editors', () => {
-      let wrapper
-        , value
-        , createArray
-        , types
+      let wrapper, value, createArray, types
 
       beforeEach(() => {
         types = {
-          input: ({ value, onChange }) => <input className="input" value={value} onChange={e => onChange(e.target.value)}/>,
+          input: ({ value, onChange }) => (
+            <input
+              className="input"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+            />
+          ),
           $object: ({ children }) => <div className="object">{children}</div>,
-          $array: ({ children, add }) => <div className="array">{children}<button onClick={add}>Add item</button></div>,
+          $array: ({ children, add }) => (
+            <div className="array">
+              {children}
+              <button onClick={add}>Add item</button>
+            </div>
+          ),
         }
       })
 
@@ -385,17 +429,15 @@ describe('json-form', () => {
         })
 
         const schema = {
-          options: [{
-            text: 'input',
-          }]
+          options: [
+            {
+              text: 'input',
+            },
+          ],
         }
 
         wrapper = mount(
-          <Form
-            schema={schema}
-            onChange={x => value = x}
-            value={value}
-          />
+          <Form schema={schema} onChange={(x) => (value = x)} value={value} />,
         )
       }
 
@@ -407,44 +449,38 @@ describe('json-form', () => {
 
       it('passes the correct children to array editors', () => {
         value = {
-          options: [
-            { text: 'foo' },
-          ]
+          options: [{ text: 'foo' }],
         }
         render()
         expect(wrapper.html()).toBe(
           '<div class="array">' +
-          /**/'<div class="object">' +
-          /**//**/'<input class="input" value="foo">' +
-          /**/'</div>' +
-          /**/'<button>Add item</button>' +
-          '</div>'
+            /**/ '<div class="object">' +
+            /**/ /**/ '<input class="input" value="foo">' +
+            /**/ '</div>' +
+            /**/ '<button>Add item</button>' +
+            '</div>',
         )
       })
 
       it('passes the correct default children to array editors', () => {
         types.$array = null
         value = {
-          options: [
-            { text: 'foo' },
-          ]
+          options: [{ text: 'foo' }],
         }
         render()
         expect(wrapper.html()).toBe(
           '<div>' +
-          /**/'<div class="object">' +
-          /**//**/'<input class="input" value="foo">' +
-          /**/'</div>' +
-          /**/'<button>Add item</button>' +
-          '</div>'
+            /**/ '<div class="object">' +
+            /**/ /**/ '<input class="input" value="foo">' +
+            /**/ '</div>' +
+            /**/ '<button>Add item</button>' +
+            '</div>',
         )
       })
 
       it('changes the state correctly for array editors', () => {
         value = {
-          options: [
-            { text: 'foo' },
-          ]
+          options: [{ text: 'foo' }],
         }
         render()
         wrapper
@@ -456,27 +492,23 @@ describe('json-form', () => {
 
       it('discards non-array values', () => {
         value = {
-          options: 'non-array'
+          options: 'non-array',
         }
         render()
 
-        const count = wrapper
-          .find('input')
-          .length
+        const count = wrapper.find('input').length
 
         expect(count).toBe(0)
       })
 
       it('supports adding a new array item', () => {
         value = {
-          options: []
+          options: [],
         }
 
         render()
 
-        wrapper
-          .find('button')
-          .simulate('click')
+        wrapper.find('button').simulate('click')
 
         expect(value.options.length).toBe(1)
       })
@@ -484,9 +516,7 @@ describe('json-form', () => {
       it('supports creating an initial array', () => {
         value = {}
         render()
-        wrapper
-          .find('button')
-          .simulate('click')
+        wrapper.find('button').simulate('click')
         expect(value.options.length).toBe(1)
       })
 
@@ -495,9 +525,7 @@ describe('json-form', () => {
 
         render()
 
-        wrapper
-          .find('button')
-          .simulate('click')
+        wrapper.find('button').simulate('click')
 
         expect(value.options instanceof FauxArray).toBe(true)
       })
@@ -505,8 +533,7 @@ describe('json-form', () => {
   })
 
   describe('coverage of defensive programming', () => {
-    let Form
-      , SubEditor
+    let Form, SubEditor
 
     beforeEach(() => {
       Form = JsonForm({ types: {} })
@@ -516,14 +543,14 @@ describe('json-form', () => {
     it('throws an error if no type could be found', () => {
       let console = global.console
       global.console = {
-        error: jest.fn()
+        error: jest.fn(),
       }
 
       expect(() => {
         SubEditor.prototype.fullType.call({
           props: {
-            schemaKeyChain: []
-          }
+            schemaKeyChain: [],
+          },
         })
       }).toThrow(/Invalid type: undefined/)
 
@@ -537,7 +564,7 @@ describe('json-form', () => {
       expect(() => {
         SubEditor.prototype.typeName.call({
           props: {
-            keyChain: []
+            keyChain: [],
           },
           type: () => {},
         })
@@ -549,10 +576,7 @@ describe('json-form', () => {
         props: {
           schemaKeyChain: [],
           valueKeyChain: [],
-          value: fauxArray([
-            'This is',
-            'array like'
-          ]),
+          value: fauxArray(['This is', 'array like']),
         },
         typeName: () => '$array',
       })
@@ -581,7 +605,7 @@ describe('json-form', () => {
           slice: () => {},
           concat: () => {},
           push: () => {},
-        })
+        }),
       })
       const expected = '$array'
       expect(actual).toBe(expected)
@@ -607,20 +631,20 @@ describe('json-form', () => {
     })
   })
 
-  test('when onChange isn\'t provided a nice error message is shown', async () => {
+  test("when onChange isn't provided a nice error message is shown", async () => {
     const Form = JsonForm({
       types: {
         string({ value, onChange }) {
           return (
-            <input value={value} onChange={e => onChange(e.target.value)} />
+            <input value={value} onChange={(e) => onChange(e.target.value)} />
           )
-        }
-      }
+        },
+      },
     })
 
     expect(() => {
       Form.prototype.render.call({
-        props: {}
+        props: {},
       })
     }).toThrow(/onChange function/)
   })
