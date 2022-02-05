@@ -1,9 +1,13 @@
 import JsonForm, { DefaultArrayEditor } from '../src'
 import { mount } from 'enzyme'
+import assert from 'assert'
 import React from 'react'
 
+function Noop() {
+  return null
+}
+
 const consoleError = console.error
-const Noop = () => null
 
 beforeEach(() => {
   console.error = () => {}
@@ -93,12 +97,17 @@ test('[p]repro: expansion of object type', () => {
   }).not.toThrow()
 })
 
-test('bugfix: add should alter the correct array with expanded schema types', () => {
+const createComplexSetup = () => {
   const availableOptions = {
     dropdown: {
       $type: [
         Symbol.for('outer'),
         {
+          placeholder: {
+            $type: 'placeholder',
+            $label: 'placeholder inside the dropdown List',
+            $placeholder: 'Choose from the list',
+          },
           choices: {
             $type: [
               Symbol.for('inner'),
@@ -113,12 +122,28 @@ test('bugfix: add should alter the correct array with expanded schema types', ()
     },
   }
 
-  const StringEditor = () => null
+  const StringEditor = ({ value, onChange }) => (
+    <input
+      data-test-id="string-editor"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  )
   StringEditor.defaultValue = ''
+
+  const PlaceholderEditor = ({ value, onChange }) => (
+    <input
+      data-test-id="placeholder-editor"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  )
+  PlaceholderEditor.defaultValue = ''
 
   const Form = JsonForm({
     types: {
       string: StringEditor,
+      placeholder: PlaceholderEditor,
       [Symbol.for('outer')]: ({ children, add }) => {
         return (
           <>
@@ -146,30 +171,45 @@ test('bugfix: add should alter the correct array with expanded schema types', ()
     },
   })
 
-  let changedValue
+  const self = {}
 
-  const wrapper = mount(
-    <Form
-      onChange={(value) => {
-        changedValue = value
-      }}
-      schema={availableOptions}
-      value={{
-        dropdown: [
-          {
-            choices: ['A1', 'A2'],
-          },
-          {
-            choices: ['B1', 'B2'],
-          },
-        ],
-      }}
-    />,
-  )
+  self.value = {
+    dropdown: [
+      {
+        choices: ['A1', 'A2'],
+      },
+      {
+        choices: ['B1', 'B2'],
+      },
+    ],
+  }
 
-  wrapper.find('[data-test-id="inner-add"]').first().simulate('click')
+  const Container = () => {
+    const [value, setValue] = React.useState(self.value)
 
-  expect(changedValue).toEqual({
+    return (
+      <Form
+        onChange={(value) => {
+          self.value = value
+          setValue(value)
+        }}
+        schema={availableOptions}
+        value={value}
+      />
+    )
+  }
+
+  self.wrapper = mount(<Container />)
+
+  return self
+}
+
+test('[pt1] bugfix: add should alter the correct array with expanded schema types', () => {
+  const data = createComplexSetup()
+
+  data.wrapper.find('[data-test-id="inner-add"]').first().simulate('click')
+
+  expect(data.value).toEqual({
     dropdown: [
       {
         choices: ['A1', 'A2', ''],
@@ -179,10 +219,16 @@ test('bugfix: add should alter the correct array with expanded schema types', ()
       },
     ],
   })
+})
 
-  wrapper.find('[data-test-id="outer-add"]').first().simulate('click')
+test('[pt2] bugfix: add should alter the correct array with expanded schema types', () => {
+  const data = createComplexSetup()
 
-  expect(changedValue).toEqual({
+  global.DEBUG = true
+  data.wrapper.find('[data-test-id="outer-add"]').first().simulate('click')
+  global.debug = false
+
+  expect(data.value).toEqual({
     dropdown: [
       {
         choices: ['A1', 'A2'],
@@ -190,7 +236,48 @@ test('bugfix: add should alter the correct array with expanded schema types', ()
       {
         choices: ['B1', 'B2'],
       },
-      null,
+      {},
+    ],
+  })
+})
+
+test('[pt3] bugfix: add should alter the correct array with expanded schema types', () => {
+  const data = createComplexSetup()
+
+  // Add a new dropdown
+  data.wrapper.find('[data-test-id="outer-add"]').first().simulate('click')
+
+  expect(data.value).toEqual({
+    dropdown: [
+      {
+        choices: ['A1', 'A2'],
+      },
+      {
+        choices: ['B1', 'B2'],
+      },
+      {},
+    ],
+  })
+
+  // Set placeholder for dropdown
+  data.wrapper
+    .find('[data-test-id="placeholder-editor"]')
+    .last()
+    .simulate('change', { target: { value: 'Hello world' } })
+
+  expect(data.value.dropdown[2].placeholder).toBe('Hello world')
+
+  expect(data.value).toEqual({
+    dropdown: [
+      {
+        choices: ['A1', 'A2'],
+      },
+      {
+        choices: ['B1', 'B2'],
+      },
+      {
+        placeholder: 'Hello world',
+      },
     ],
   })
 })

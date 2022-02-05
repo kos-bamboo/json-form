@@ -1,6 +1,6 @@
 import { useAutoCallback, useAutoMemo } from 'hooks.macro'
-import EditorContext from './EditorContext'
 import determineTypeName from './determineTypeName'
+import EditorContext from './EditorContext'
 import { useContext } from 'react'
 import deepSet from './deepSet'
 import * as util from './util'
@@ -8,16 +8,63 @@ import access from './access'
 import typeOf from './typeOf'
 import React from 'react'
 
+function isCustomArray(typeName, type) {
+  return typeName === '$array' && typeof type[0] === 'symbol'
+}
+
+function resolveEditor({ typeName, types, type }) {
+  if (isCustomArray(typeName, type)) {
+    const arrayType = type[0]
+    if (!types[arrayType]) {
+      throw Error(`Missing custom array editor for ${String(arrayType)}`)
+    }
+    return types[arrayType]
+  } else {
+    return types[typeName]
+  }
+}
+
+function coerceType(value, Editor, types, typeName) {
+  if (
+    (typeName === '$array' || Editor === types.$array) &&
+    typeOf(value) !== 'array'
+  ) {
+    return []
+  }
+
+  if (
+    (typeName === '$object' || Editor === types.$object) &&
+    typeOf(value) !== 'object'
+  ) {
+    return {}
+  }
+
+  if (value === undefined && Editor?.defaultValue !== null) {
+    return Editor.defaultValue
+  }
+
+  return value
+}
+
+function resolveType(schema, schemaKeyChain) {
+  const fullType = access(schema, schemaKeyChain)
+  const isExpanded = Boolean(fullType.$type)
+
+  return isExpanded ? fullType.$type : fullType
+}
+
 export default function SubEditor({
   onChange,
   schemaKeyChain,
   valueKeyChain,
-  value: valueFromProps,
+  rootValue,
   computedPropsRest,
 }) {
   const { originalOnChange, options, schema } = useContext(EditorContext)
 
+  const parentType = access(schema, schemaKeyChain.slice(0, -1))
   const fullType = access(schema, schemaKeyChain)
+  const value = access(rootValue, valueKeyChain)
 
   // istanbul ignore next
   if (!fullType) {
@@ -35,53 +82,53 @@ export default function SubEditor({
   })
 
   const isExpanded = Boolean(fullType.$type)
-  const type = isExpanded ? fullType.$type : fullType
+
+  const type = resolveType(schema, schemaKeyChain)
 
   const typeName = useAutoMemo(() => {
     return determineTypeName(type)
   })
 
-  const isCustomArray = typeName === '$array' && typeof type[0] === 'symbol'
-
   const Editor = useAutoMemo(() => {
-    if (isCustomArray) {
-      const arrayType = type[0]
-      if (!options.types[arrayType]) {
-        throw Error(`Missing custom array editor for ${String(arrayType)}`)
-      }
-      return options.types[arrayType]
-    } else {
-      return options.types[typeName]
-    }
+    return resolveEditor({
+      types: options.types,
+      typeName,
+      type,
+    })
   })
 
-  const arrayChildTypeIndex = isCustomArray ? '1' : '0'
+  const arrayChildTypeIndex = isCustomArray(typeName, type) ? '1' : '0'
 
-  const ArrayChildEditor = useAutoMemo(() => {
+  const childTypeName = useAutoMemo(() => {
     if (typeName !== '$array') return null
 
     let subType = type[arrayChildTypeIndex]
 
     const expandedSubType = subType.$type ? subType.$type : subType
 
-    return options.types[determineTypeName(expandedSubType)]
+    return determineTypeName(expandedSubType)
   })
 
-  const processedValue = useAutoMemo(() => {
-    const value = access(valueFromProps, valueKeyChain)
-
-    switch (typeName) {
-      case '$object':
-        if (typeOf(value) !== 'object') return {}
-        return value
-      case '$array':
-        if (!util.isArrayLike(value)) return options.createArray()
-        return value
-      default:
-        if (value === undefined) return Editor.defaultValue
-        return value
-    }
+  const ArrayChildEditor = useAutoMemo(() => {
+    if (childTypeName == null) return null
+    return resolveEditor({
+      types: options.types,
+      typeName: childTypeName,
+      type: resolveType(
+        schema,
+        schemaKeyChain.concat(
+          isExpanded ? ['$type', arrayChildTypeIndex] : [arrayChildTypeIndex],
+        ),
+      ),
+    })
   })
+
+  const coercedValue = coerceType(value, Editor, options.types, typeName)
+
+  // istanbul ignore next
+  if (typeName === '$array' && typeOf(coercedValue) !== 'array') {
+    throw Error('Array type was not coerced into array.')
+  }
 
   const children = useAutoMemo(() => {
     switch (typeName) {
@@ -97,8 +144,7 @@ export default function SubEditor({
               )}
               valueKeyChain={valueKeyChain.concat(key)}
               onChange={onChange}
-              value={valueFromProps}
-              Editor={SubEditor}
+              rootValue={rootValue}
             />,
           )
         }
@@ -107,9 +153,8 @@ export default function SubEditor({
       }
       case '$array': {
         const children = []
-        const value = processedValue
 
-        for (let i = 0; i < value.length; i++) {
+        for (let i = 0; i < coercedValue.length; i++) {
           const nextKeyChain = schemaKeyChain.concat(
             isExpanded ? ['$type', arrayChildTypeIndex] : arrayChildTypeIndex,
           )
@@ -117,12 +162,11 @@ export default function SubEditor({
 
           children.push(
             <SubEditor
-              key={i + '/' + value.length}
+              key={i + '/' + coercedValue.length}
               schemaKeyChain={nextKeyChain}
               valueKeyChain={nextValueKeyChain}
               onChange={onChange}
-              value={valueFromProps}
-              Editor={SubEditor}
+              rootValue={rootValue}
             />,
           )
         }
@@ -135,8 +179,6 @@ export default function SubEditor({
   })
 
   const label = useAutoMemo(() => {
-    const parentType = access(schema, schemaKeyChain.slice(0, -1))
-
     if (util.isArrayLike(parentType)) {
       return util.decamelizeAndUppercaseFirst(
         util.singular(schemaKeyChain[schemaKeyChain.length - 2]) +
@@ -155,7 +197,7 @@ export default function SubEditor({
   const computedProps = useAutoMemo(() => {
     if (typeof fullType.$computedProps === 'function') {
       const rest = util.isArrayLike(computedPropsRest) ? computedPropsRest : []
-      return fullType.$computedProps(valueFromProps, ...rest)
+      return fullType.$computedProps(rootValue, ...rest)
     }
     return {}
   })
@@ -165,18 +207,19 @@ export default function SubEditor({
       throw Error('add() can only be called from array editors')
     }
 
-    let defaultValue = null
-
-    if (ArrayChildEditor?.defaultValue != null) {
-      defaultValue = ArrayChildEditor?.defaultValue
-    }
+    const defaultValue = coerceType(
+      undefined,
+      ArrayChildEditor,
+      options.types,
+      childTypeName,
+    )
 
     const array = (
-      access(valueFromProps, valueKeyChain) || options.createArray()
+      util.isArrayLike(value) ? value : options.createArray()
     ).concat(defaultValue)
 
     const newValue = deepSet(
-      valueFromProps,
+      rootValue,
       valueKeyChain,
       array,
       schemaKeyChain,
@@ -198,8 +241,7 @@ export default function SubEditor({
       valueKeyChain={valueKeyChain}
       schema={schema}
       label={label}
-      value={processedValue}
-      Editor={SubEditor}
+      value={coercedValue}
       add={add}
       {...computedProps}
     >

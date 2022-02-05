@@ -8,6 +8,18 @@ afterEach(() => {
   console.error = consoleError
 })
 
+const StringEditor = ({ onChange, value }) => {
+  return (
+    <input
+      className="string-editor"
+      onChange={(e) => onChange(e.target.value)}
+      value={value}
+    />
+  )
+}
+
+StringEditor.defaultValue = ''
+
 class FauxArray {
   length = 0
 
@@ -415,7 +427,7 @@ describe('json-form', () => {
     })
 
     describe('array editors', () => {
-      let wrapper, value, createArray, types
+      let wrapper, value, createArray, schema, types
 
       beforeEach(() => {
         types = {
@@ -442,14 +454,6 @@ describe('json-form', () => {
           createArray,
         })
 
-        const schema = {
-          options: [
-            {
-              text: 'input',
-            },
-          ],
-        }
-
         wrapper = mount(
           <Form schema={schema} onChange={(x) => (value = x)} value={value} />,
         )
@@ -457,15 +461,21 @@ describe('json-form', () => {
 
       afterEach(() => {
         value = {}
+        schema = null
         createArray = null
         wrapper = null
       })
 
       it('passes the correct children to array editors', () => {
+        schema = {
+          options: [{ text: 'input' }],
+        }
         value = {
           options: [{ text: 'foo' }],
         }
+
         render()
+
         expect(wrapper.html()).toBe(
           '<div class="array">' +
             /**/ '<div class="object">' +
@@ -478,10 +488,16 @@ describe('json-form', () => {
 
       it('passes the correct default children to array editors', () => {
         types.$array = null
+
+        schema = {
+          options: [{ text: 'input' }],
+        }
         value = {
           options: [{ text: 'foo' }],
         }
+
         render()
+
         expect(wrapper.html()).toBe(
           '<div>' +
             /**/ '<div class="object">' +
@@ -493,52 +509,68 @@ describe('json-form', () => {
       })
 
       it('changes the state correctly for array editors', () => {
+        schema = {
+          options: [{ text: 'input' }],
+        }
         value = {
           options: [{ text: 'foo' }],
         }
+
         render()
         wrapper
           .find('input')
           .first()
           .simulate('change', { target: { value: 'Hello world' } })
+
         expect(value.options[0].text).toBe('Hello world')
       })
 
       it('discards non-array values', () => {
+        schema = {
+          options: [{ text: 'input' }],
+        }
         value = {
           options: 'non-array',
         }
+
         render()
 
-        const count = wrapper.find('input').length
-
-        expect(count).toBe(0)
+        expect(wrapper.find('input').length).toBe(0)
       })
 
       it('supports adding a new array item', () => {
+        schema = {
+          options: [{ text: 'input' }],
+        }
         value = {
           options: [],
         }
 
         render()
-
         wrapper.find('button').simulate('click')
 
         expect(value.options.length).toBe(1)
       })
 
       it('supports creating an initial array', () => {
+        schema = {
+          options: [{ text: 'input' }],
+        }
         value = {}
+
         render()
         wrapper.find('button').simulate('click')
+
         expect(value.options.length).toBe(1)
       })
 
       it('supports a custom createArray function', () => {
+        schema = {
+          options: [{ text: 'input' }],
+        }
         createArray = fauxArray
 
         render()
-
         wrapper.find('button').simulate('click')
 
         expect(value.options instanceof FauxArray).toBe(true)
@@ -579,5 +611,55 @@ describe('json-form', () => {
     expect(() => {
       mount(<Form schema={{ foo: 'string' }} onChange={() => {}} />)
     }).toThrow('add() can only be called from array editors')
+  })
+
+  it('coerces non-objects to objects', () => {
+    const Form = JsonForm({
+      types: {
+        string: StringEditor,
+      },
+    })
+
+    const wrapper = mount(
+      <Form
+        onChange={() => {}}
+        schema={{ foo: { bar: 'string' } }}
+        value={{
+          foo: 'not-an-object',
+        }}
+      />,
+    )
+
+    // prettier-ignore
+    expect(wrapper.html()).toBe(
+      '<div>' +
+      /**/ '<input class="string-editor" value="">' +
+      '</div>'
+    )
+  })
+
+  it('coerces non-arrays to arrays', () => {
+    const Form = JsonForm({
+      types: {
+        string: StringEditor,
+      },
+    })
+
+    const wrapper = mount(
+      <Form
+        onChange={() => {}}
+        schema={{ foo: ['string'] }}
+        value={{
+          foo: 'not-an-array',
+        }}
+      />,
+    )
+
+    // prettier-ignore
+    expect(wrapper.html()).toBe(
+      '<div>' +
+      /**/ '<button>Add item</button>' +
+      '</div>'
+    )
   })
 })

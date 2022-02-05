@@ -79,7 +79,7 @@ describe('Custom array editors', () => {
     )
   })
 
-  it('is renders the correct html', () => {
+  it('it renders the correct html', () => {
     expect(wrapper.html()).toBe(
       '<paginated-editor>' +
         /**/ '<object-editor>' +

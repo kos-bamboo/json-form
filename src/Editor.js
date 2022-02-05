@@ -25,7 +25,7 @@ export default function Editor({ value: valueFromProps, computedPropsRest }) {
         valueKeyChain={[key]}
         onChange={onChange}
         computedPropsRest={computedPropsRest}
-        value={valueFromProps}
+        rootValue={valueFromProps}
         Editor={SubEditor}
       />
     ))

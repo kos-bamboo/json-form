@@ -3,7 +3,7 @@ import EditorContext from './EditorContext'
 import Editor from './Editor'
 import React from 'react'
 
-export const DefaultArrayEditor = ({ children, add }) => {
+export function DefaultArrayEditor({ children, add }) {
   return (
     <div>
       {children}

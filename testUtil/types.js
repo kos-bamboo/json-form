@@ -3,12 +3,11 @@ import React from 'react'
 export const string = ({ onChange, label, value }) => (
   <string-editor>
     <string-editor-label>{label}</string-editor-label>
-    <input
-      value={value}
-      onChange={onChange}
-    />
+    <input value={value} onChange={onChange} />
   </string-editor>
 )
+
+string.defaultValue = ''
 
 export const $object = ({ children, label }) => (
   <object-editor>
