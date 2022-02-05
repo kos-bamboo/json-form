@@ -92,3 +92,104 @@ test('[p]repro: expansion of object type', () => {
     )
   }).not.toThrow()
 })
+
+test('bugfix: add should alter the correct array with expanded schema types', () => {
+  const availableOptions = {
+    dropdown: {
+      $type: [
+        Symbol.for('outer'),
+        {
+          choices: {
+            $type: [
+              Symbol.for('inner'),
+              {
+                choice: {
+                  $type: 'string',
+                  $label: 'choice',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    },
+  }
+
+  const Form = JsonForm({
+    types: {
+      string: Noop,
+      [Symbol.for('outer')]: ({ children, add }) => {
+        return (
+          <>
+            {children.map((child, i) => (
+              <div key={i}>{child}</div>
+            ))}
+            <button type="button" data-test-id="outer-add" onClick={add}>
+              Outer add
+            </button>
+          </>
+        )
+      },
+      [Symbol.for('inner')]: ({ children, add }) => {
+        return (
+          <>
+            {children.map((child, i) => (
+              <div key={i}>{child}</div>
+            ))}
+            <button type="button" data-test-id="inner-add" onClick={add}>
+              Inner add
+            </button>
+          </>
+        )
+      },
+    },
+  })
+
+  let changedValue
+
+  const wrapper = mount(
+    <Form
+      onChange={(value) => {
+        changedValue = value
+      }}
+      schema={availableOptions}
+      value={{
+        dropdown: [
+          {
+            choices: ['A1', 'A2'],
+          },
+          {
+            choices: ['B1', 'B2'],
+          },
+        ],
+      }}
+    />,
+  )
+
+  wrapper.find('[data-test-id="inner-add"]').first().simulate('click')
+
+  expect(changedValue).toEqual({
+    dropdown: [
+      {
+        choices: ['A1', 'A2', null],
+      },
+      {
+        choices: ['B1', 'B2'],
+      },
+    ],
+  })
+
+  wrapper.find('[data-test-id="outer-add"]').first().simulate('click')
+
+  expect(changedValue).toEqual({
+    dropdown: [
+      {
+        choices: ['A1', 'A2'],
+      },
+      {
+        choices: ['B1', 'B2'],
+      },
+      null,
+    ],
+  })
+})

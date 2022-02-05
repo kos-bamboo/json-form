@@ -164,7 +164,7 @@ export default function SubEditor({
     }
 
     const array = (
-      access(valueFromProps, schemaKeyChain) || options.createArray()
+      access(valueFromProps, valueKeyChain) || options.createArray()
     ).concat(null)
 
     const newValue = deepSet(
