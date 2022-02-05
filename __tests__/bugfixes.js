@@ -103,10 +103,8 @@ test('bugfix: add should alter the correct array with expanded schema types', ()
             $type: [
               Symbol.for('inner'),
               {
-                choice: {
-                  $type: 'string',
-                  $label: 'choice',
-                },
+                $type: 'string',
+                $label: 'choice',
               },
             ],
           },
@@ -115,9 +113,12 @@ test('bugfix: add should alter the correct array with expanded schema types', ()
     },
   }
 
+  const StringEditor = () => null
+  StringEditor.defaultValue = ''
+
   const Form = JsonForm({
     types: {
-      string: Noop,
+      string: StringEditor,
       [Symbol.for('outer')]: ({ children, add }) => {
         return (
           <>
@@ -171,7 +172,7 @@ test('bugfix: add should alter the correct array with expanded schema types', ()
   expect(changedValue).toEqual({
     dropdown: [
       {
-        choices: ['A1', 'A2', null],
+        choices: ['A1', 'A2', ''],
       },
       {
         choices: ['B1', 'B2'],

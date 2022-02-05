@@ -1,5 +1,6 @@
 import { useAutoCallback, useAutoMemo } from 'hooks.macro'
 import EditorContext from './EditorContext'
+import determineTypeName from './determineTypeName'
 import { useContext } from 'react'
 import deepSet from './deepSet'
 import * as util from './util'
@@ -37,17 +38,7 @@ export default function SubEditor({
   const type = isExpanded ? fullType.$type : fullType
 
   const typeName = useAutoMemo(() => {
-    switch (typeOf(type)) {
-      case 'object':
-        return '$object'
-      case 'array':
-        return '$array'
-      case 'string':
-        return type
-      // istanbul ignore next
-      default:
-        throw Error('Invalid type: ' + typeOf(type))
-    }
+    return determineTypeName(type)
   })
 
   const isCustomArray = typeName === '$array' && typeof type[0] === 'symbol'
@@ -62,6 +53,18 @@ export default function SubEditor({
     } else {
       return options.types[typeName]
     }
+  })
+
+  const arrayChildTypeIndex = isCustomArray ? '1' : '0'
+
+  const ArrayChildEditor = useAutoMemo(() => {
+    if (typeName !== '$array') return null
+
+    let subType = type[arrayChildTypeIndex]
+
+    const expandedSubType = subType.$type ? subType.$type : subType
+
+    return options.types[determineTypeName(expandedSubType)]
   })
 
   const processedValue = useAutoMemo(() => {
@@ -105,11 +108,10 @@ export default function SubEditor({
       case '$array': {
         const children = []
         const value = processedValue
-        const schemaIndex = isCustomArray ? '1' : '0'
 
         for (let i = 0; i < value.length; i++) {
           const nextKeyChain = schemaKeyChain.concat(
-            isExpanded ? ['$type', schemaIndex] : schemaIndex,
+            isExpanded ? ['$type', arrayChildTypeIndex] : arrayChildTypeIndex,
           )
           const nextValueKeyChain = valueKeyChain.concat(i)
 
@@ -163,9 +165,15 @@ export default function SubEditor({
       throw Error('add() can only be called from array editors')
     }
 
+    let defaultValue = null
+
+    if (ArrayChildEditor?.defaultValue != null) {
+      defaultValue = ArrayChildEditor?.defaultValue
+    }
+
     const array = (
       access(valueFromProps, valueKeyChain) || options.createArray()
-    ).concat(null)
+    ).concat(defaultValue)
 
     const newValue = deepSet(
       valueFromProps,

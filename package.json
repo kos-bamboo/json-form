@@ -1,6 +1,6 @@
 {
   "name": "@adrianhelvik/json-form",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "main": "dist/index.js",
   "license": "MIT",
   "repository": {
