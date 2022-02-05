@@ -662,4 +662,38 @@ describe('json-form', () => {
       '</div>'
     )
   })
+
+  it('coerces non-objects to objects when changes occur down-tree', () => {
+    const Form = JsonForm({
+      types: {
+        string: StringEditor,
+      },
+    })
+
+    let updatedValue
+
+    const wrapper = mount(
+      <Form
+        onChange={(value) => (updatedValue = value)}
+        schema={{ foo: { bar: { baz: 'string' } } }}
+        value={{
+          foo: Object.assign([], {
+            bar: {
+              baz: 'Hello world',
+            },
+          }),
+        }}
+      />,
+    )
+
+    wrapper.find('input').simulate('change', { target: { value: 'Updated!' } })
+
+    expect(updatedValue).toEqual({
+      foo: {
+        bar: {
+          baz: 'Updated!',
+        },
+      },
+    })
+  })
 })
