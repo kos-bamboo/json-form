@@ -2,6 +2,12 @@ import JsonForm from '../src'
 import { mount } from 'enzyme'
 import React from 'react'
 
+const consoleError = console.error
+
+afterEach(() => {
+  console.error = consoleError
+})
+
 class FauxArray {
   length = 0
 
@@ -88,7 +94,7 @@ describe('json-form', () => {
       expect(wrapper.state('value').title).toBe('Hello world')
     })
 
-    it('preserves the editor elements', async () => {
+    it('preserves the editor elements (and thus focus)', () => {
       const InputEditor = ({ onChange, value }) => {
         return <input onChange={(e) => onChange(e.target.value)} />
       }
@@ -118,7 +124,11 @@ describe('json-form', () => {
         )
       }
 
-      const wrapper = mount(<FormContainer />)
+      document.body.appendChild(document.createElement('div'))
+
+      const wrapper = mount(<FormContainer />, {
+        attachTo: document.body.children[0],
+      })
 
       const input = wrapper.find('input').first()
       const text = wrapper.find('div').first()
@@ -126,13 +136,17 @@ describe('json-form', () => {
       const inputNode = input.getDOMNode()
 
       inputNode.focus()
+      expect(document.activeElement.tagName).toBe('INPUT')
 
+      wrapper.update()
       input.simulate('change', { target: { value: 'a' } })
+      wrapper.update()
       input.simulate('change', { target: { value: 'b' } })
       input.simulate('change', { target: { value: 'c' } })
 
-      expect(document.activeElement).toBe(inputNode)
       expect(text.text()).toBe('value.title is: c')
+
+      expect(document.activeElement.tagName).toBe('INPUT')
     })
 
     describe('$computedProps', () => {
@@ -532,106 +546,7 @@ describe('json-form', () => {
     })
   })
 
-  describe('coverage of defensive programming', () => {
-    let Form, SubEditor
-
-    beforeEach(() => {
-      Form = JsonForm({ types: {} })
-      SubEditor = Form.SubEditor
-    })
-
-    it('throws an error if no type could be found', () => {
-      let console = global.console
-      global.console = {
-        error: jest.fn(),
-      }
-
-      expect(() => {
-        SubEditor.prototype.fullType.call({
-          props: {
-            schemaKeyChain: [],
-          },
-        })
-      }).toThrow(/Invalid type: undefined/)
-
-      expect(global.console.error).toHaveBeenCalledWith('Schema:', undefined)
-      expect(global.console.error).toHaveBeenCalledWith('Key chain:', [])
-
-      global.console = console
-    })
-
-    it('throws an error if no valid type name was found', () => {
-      expect(() => {
-        SubEditor.prototype.typeName.call({
-          props: {
-            keyChain: [],
-          },
-          type: () => {},
-        })
-      }).toThrow(/Invalid type: undefined/)
-    })
-
-    it('type returns array like values', () => {
-      const value = SubEditor.prototype.value.call({
-        props: {
-          schemaKeyChain: [],
-          valueKeyChain: [],
-          value: fauxArray(['This is', 'array like']),
-        },
-        typeName: () => '$array',
-      })
-
-      expect(value).toEqual(fauxArray(['This is', 'array like']))
-    })
-
-    test('value() returns the value by default', () => {
-      const actual = SubEditor.prototype.value.call({
-        props: {
-          valueKeyChain: [],
-          value: 'something',
-        },
-        typeName: () => '...',
-      })
-      const expected = 'something'
-
-      expect(actual).toBe(expected)
-    })
-
-    test('typeName() returns "$array" if the type is an array like object', () => {
-      const actual = SubEditor.prototype.typeName.call({
-        type: () => ({
-          length: 0,
-          map: () => {},
-          slice: () => {},
-          concat: () => {},
-          push: () => {},
-        }),
-      })
-      const expected = '$array'
-      expect(actual).toBe(expected)
-    })
-
-    test('An error is thrown if no editor matches a given type', () => {
-      expect(() => {
-        SubEditor.prototype.render.call({
-          editor: () => {},
-          children: () => {},
-          computedProps: () => {},
-          typeName: () => 'foobar',
-        })
-      }).toThrow('No type with the name "foobar" has been registered')
-    })
-
-    test('you cannot call add for non-array types', () => {
-      expect(() => {
-        const instance = new SubEditor()
-        instance.typeName = () => 'non-array'
-        instance.add()
-      }).toThrow('Invalid type for add')
-    })
-  })
-
-  test("when onChange isn't provided a nice error message is shown", async () => {
+  test("when onChange isn't provided a nice error message is shown", () => {
     const Form = JsonForm({
       types: {
         string({ value, onChange }) {
@@ -642,10 +557,27 @@ describe('json-form', () => {
       },
     })
 
+    console.error = () => {}
+
     expect(() => {
-      Form.prototype.render.call({
-        props: {},
-      })
+      mount(<Form />)
     }).toThrow(/onChange function/)
+  })
+
+  test('you cannot call add from a non-array editor', () => {
+    const Form = JsonForm({
+      types: {
+        string({ add }) {
+          add()
+          return null
+        },
+      },
+    })
+
+    console.error = () => {}
+
+    expect(() => {
+      mount(<Form schema={{ foo: 'string' }} onChange={() => {}} />)
+    }).toThrow('add() can only be called from array editors')
   })
 })
