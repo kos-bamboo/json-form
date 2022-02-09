@@ -236,7 +236,10 @@ test('[pt2] bugfix: add should alter the correct array with expanded schema type
       {
         choices: ['B1', 'B2'],
       },
-      {},
+      {
+        choices: [],
+        placeholder: '',
+      },
     ],
   })
 })
@@ -255,7 +258,10 @@ test('[pt3] bugfix: add should alter the correct array with expanded schema type
       {
         choices: ['B1', 'B2'],
       },
-      {},
+      {
+        choices: [],
+        placeholder: '',
+      },
     ],
   })
 
@@ -276,6 +282,7 @@ test('[pt3] bugfix: add should alter the correct array with expanded schema type
         choices: ['B1', 'B2'],
       },
       {
+        choices: [],
         placeholder: 'Hello world',
       },
     ],

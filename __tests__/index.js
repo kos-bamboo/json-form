@@ -1,8 +1,12 @@
-import JsonForm from '../src'
 import { mount } from 'enzyme'
+import JsonForm from '../src'
 import React from 'react'
 
 const consoleError = console.error
+
+beforeEach(() => {
+  console.error = () => {}
+})
 
 afterEach(() => {
   console.error = consoleError
@@ -51,58 +55,75 @@ describe('json-form', () => {
   })
 
   describe('single level', () => {
-    it('creates the correct react elements', () => {
-      const InputEditor = ({ onChange, value }) => (
-        <input onChange={(e) => onChange(e.target.value)} />
-      )
-      const NumberEditor = ({ onChange, value }) => (
-        <input
-          type="number"
-          onChange={(e) => onChange(parseInt(e.target.value, 10))}
-        />
-      )
+    const InputEditor = ({ onChange, value }) => (
+      <input onChange={(e) => onChange(e.target.value)} />
+    )
 
-      const Form = JsonForm({
-        types: {
-          number: NumberEditor,
-          input: InputEditor,
-        },
-      })
+    const NumberEditor = ({ onChange, value }) => (
+      <input
+        type="number"
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+      />
+    )
 
-      const schema = {
-        title: 'input',
-        amount: 'number',
+    const Form = JsonForm({
+      types: {
+        number: NumberEditor,
+        input: InputEditor,
+      },
+    })
+
+    class FormContainer extends React.Component {
+      state = {
+        value: this.props.initialValue ?? {},
       }
 
-      class FormContainer extends React.Component {
-        state = {
-          value: {},
-        }
-
-        onChange = (value) => {
-          this.setState({ value })
-        }
-
-        render() {
-          return (
-            <Form
-              schema={schema}
-              onChange={(value) => this.setState({ value })}
-              value={{
-                ...this.state,
-              }}
-            />
-          )
-        }
+      onChange = (value) => {
+        this.setState({ value })
       }
 
-      const wrapper = mount(<FormContainer />)
+      render() {
+        return (
+          <Form
+            schema={this.props.schema}
+            onChange={(value) => this.setState({ value })}
+            value={{
+              ...this.state,
+            }}
+          />
+        )
+      }
+    }
+
+    it('creates the correct DOM nodes', () => {
+      const wrapper = mount(
+        <FormContainer
+          initialValue={{}}
+          schema={{
+            title: 'input',
+            amount: 'number',
+          }}
+        />,
+      )
+
+      expect(wrapper.html()).toBe('<input><input type="number">')
+    })
+
+    it('can store a new value', () => {
+      const wrapper = mount(
+        <FormContainer
+          initialValue={{}}
+          schema={{
+            title: 'input',
+            amount: 'number',
+          }}
+        />,
+      )
 
       const input = wrapper.find('input').first()
 
-      expect(input).toBeDefined()
-      expect(input.html()).toBe('<input>')
       input.simulate('change', { target: { value: 'Hello world' } })
+
       expect(wrapper.state('value').title).toBe('Hello world')
     })
 
@@ -215,7 +236,7 @@ describe('json-form', () => {
         expect(input).toBeDefined()
         expect(input.html()).toBe('<input>')
         input.simulate('change', { target: { value: 'Hello world' } })
-        expect(wrapper.state('value').title).toBe('Hel')
+        expect(wrapper.state('value').title).toBe('Hello world')
       })
 
       it('takes options as the first parameter of $computedProps', () => {
@@ -285,7 +306,8 @@ describe('json-form', () => {
 
         numberEditor.simulate('change', { target: { value: '5' } })
         inputEditor.simulate('change', { target: { value: 'foobar' } })
-        expect(wrapper.state('value').title).toBe('fooba')
+
+        expect(wrapper.state('value').title).toBe('foobar')
       })
 
       it('can take another input as its second parmeter', () => {
@@ -336,10 +358,12 @@ describe('json-form', () => {
 
         const wrapper = mount(<FormContainer />)
 
-        const inputEditor = wrapper.find('.input-editor').first()
+        wrapper
+          .find('.input-editor')
+          .first()
+          .simulate('change', { target: { value: 'foobar' } })
 
-        inputEditor.simulate('change', { target: { value: 'foobar' } })
-        expect(wrapper.state('value').title).toBe('foo')
+        expect(wrapper.state('value').title).toBe('foobar')
       })
     })
   })
@@ -427,16 +451,19 @@ describe('json-form', () => {
     })
 
     describe('array editors', () => {
-      let wrapper, value, createArray, schema, types
+      let wrapper, value, schema, types
 
       beforeEach(() => {
         types = {
-          input: ({ value, onChange }) => (
-            <input
-              className="input"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-            />
+          input: Object.assign(
+            ({ value, onChange }) => (
+              <input
+                className="input"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+              />
+            ),
+            { defaultValue: '' },
           ),
           $object: ({ children }) => <div className="object">{children}</div>,
           $array: ({ children, add }) => (
@@ -451,18 +478,22 @@ describe('json-form', () => {
       const render = () => {
         const Form = JsonForm({
           types,
-          createArray,
         })
 
-        wrapper = mount(
-          <Form schema={schema} onChange={(x) => (value = x)} value={value} />,
-        )
+        function Container() {
+          const [state, setState] = React.useState(value)
+
+          value = state
+
+          return <Form schema={schema} onChange={setState} value={state} />
+        }
+
+        wrapper = mount(<Container />)
       }
 
       afterEach(() => {
         value = {}
         schema = null
-        createArray = null
         wrapper = null
       })
 
@@ -547,9 +578,11 @@ describe('json-form', () => {
         }
 
         render()
+
         wrapper.find('button').simulate('click')
 
         expect(value.options.length).toBe(1)
+        expect(value.options).toEqual([{ text: '' }])
       })
 
       it('supports creating an initial array', () => {
@@ -562,18 +595,6 @@ describe('json-form', () => {
         wrapper.find('button').simulate('click')
 
         expect(value.options.length).toBe(1)
-      })
-
-      it('supports a custom createArray function', () => {
-        schema = {
-          options: [{ text: 'input' }],
-        }
-        createArray = fauxArray
-
-        render()
-        wrapper.find('button').simulate('click')
-
-        expect(value.options instanceof FauxArray).toBe(true)
       })
     })
   })
@@ -610,7 +631,7 @@ describe('json-form', () => {
 
     expect(() => {
       mount(<Form schema={{ foo: 'string' }} onChange={() => {}} />)
-    }).toThrow('add() can only be called from array editors')
+    }).toThrow('add is not a function')
   })
 
   it('coerces non-objects to objects', () => {
@@ -672,21 +693,31 @@ describe('json-form', () => {
 
     let updatedValue
 
-    const wrapper = mount(
-      <Form
-        onChange={(value) => (updatedValue = value)}
-        schema={{ foo: { bar: { baz: 'string' } } }}
-        value={{
-          foo: Object.assign([], {
-            bar: {
-              baz: 'Hello world',
-            },
-          }),
-        }}
-      />,
-    )
+    const Container = () => {
+      let [value, setValue] = React.useState()
+
+      updatedValue = value
+
+      return (
+        <Form
+          onChange={setValue}
+          schema={{ foo: { bar: { baz: 'string' } } }}
+          value={{
+            foo: Object.assign([], {
+              bar: {
+                baz: 'Hello world',
+              },
+            }),
+          }}
+        />
+      )
+    }
+
+    const wrapper = mount(<Container />)
 
     wrapper.find('input').simulate('change', { target: { value: 'Updated!' } })
+
+    expect(updatedValue?.foo?.bar?.baz).toBe('Updated!')
 
     expect(updatedValue).toEqual({
       foo: {

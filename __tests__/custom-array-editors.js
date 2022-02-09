@@ -32,12 +32,13 @@ describe('Custom array editors', () => {
       render() {
         const buttons = []
 
-        for (let i = 0; i < this.children().length; i++)
+        for (let i = 0; i < this.props.children.length; i++) {
           buttons.push(
             <button key={i} onClick={() => this.setIndex(i)}>
               {i + 1}
             </button>,
           )
+        }
 
         return (
           <paginated-editor>
@@ -79,9 +80,10 @@ describe('Custom array editors', () => {
     )
   })
 
-  it('it renders the correct html', () => {
+  it('renders the correct html', () => {
     expect(wrapper.html()).toBe(
-      '<paginated-editor>' +
+      '' +
+        '<paginated-editor>' +
         /**/ '<object-editor>' +
         /**/ /**/ '<div class="string">' +
         /**/ /**/ /**/ 'Title: <input value="foobar">' +
@@ -106,6 +108,28 @@ describe('Custom array editors', () => {
     expect(value.list[0].title).toBe('new val')
   })
 
+  it('throws an error when an editor has not been registered', () => {
+    const Form = JsonForm({
+      types: {},
+    })
+
+    console.error = () => {}
+
+    expect(() => {
+      mount(
+        <Form
+          schema={{
+            items: {
+              $type: [Symbol.for('not-a-valid-type'), 'string'],
+            },
+          }}
+          onChange={() => {}}
+          value={{}}
+        />,
+      )
+    }).toThrow()
+  })
+
   it('throws an appropriate error message when an editor has not been registered', () => {
     const Form = JsonForm({
       types: {},
@@ -118,7 +142,7 @@ describe('Custom array editors', () => {
         <Form
           schema={{
             items: {
-              $type: [Symbol.for('not-a-valid-type')],
+              $type: [Symbol.for('not-a-valid-type'), 'string'],
             },
           }}
           onChange={() => {}}

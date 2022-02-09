@@ -3,5 +3,5 @@ import enzyme from 'enzyme'
 import 'jest-enzyme'
 
 enzyme.configure({
-  adapter: new EnzymeAdapter()
+  adapter: new EnzymeAdapter(),
 })

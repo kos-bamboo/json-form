@@ -1,35 +1,31 @@
-import EditorContext from './EditorContext'
+import objectKeyToLabel from './objectKeyToLabel'
 import SubEditor from './SubEditor'
-import deepSet from './deepSet'
+import useSchema from './useSchema'
 import React from 'react'
 
-export default function Editor({ value: valueFromProps, computedPropsRest }) {
-  const { originalOnChange, schema } = React.useContext(EditorContext)
+export default function Editor({ onChange, value }) {
+  const schema = useSchema()
 
-  const onChange = (valueKeyChain, schemaKeyChain, value) => {
-    const nextValue = deepSet(
-      valueFromProps,
-      valueKeyChain,
-      value,
-      schemaKeyChain,
-      schema,
-    )
-    originalOnChange(nextValue)
-  }
-
-  const createEditor = () => {
-    return Object.keys(schema).map((key) => (
-      <SubEditor
-        key={key}
-        schemaKeyChain={[key]}
-        valueKeyChain={[key]}
-        onChange={onChange}
-        computedPropsRest={computedPropsRest}
-        rootValue={valueFromProps}
-        Editor={SubEditor}
-      />
-    ))
-  }
-
-  return createEditor()
+  return (
+    <>
+      {Object.keys(schema).map((key) => (
+        <SubEditor
+          key={key}
+          schema={schema[key]}
+          path={[key]}
+          value={value?.[key]}
+          label={objectKeyToLabel(key)}
+          onChange={(childValue) => {
+            if (typeof childValue === 'function') {
+              childValue = childValue(value?.[key])
+            }
+            onChange({
+              ...value,
+              [key]: childValue,
+            })
+          }}
+        />
+      ))}
+    </>
+  )
 }

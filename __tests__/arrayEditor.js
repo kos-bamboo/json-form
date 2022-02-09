@@ -63,7 +63,7 @@ describe('array editor', () => {
       expect(wrapper.getValue()).toEqual({
         articles: [
           {
-            tags: [{ name: 'foobar' }, {}],
+            tags: [{ name: 'foobar' }, { name: '' }],
           },
         ],
       })

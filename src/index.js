@@ -1,5 +1,7 @@
 import useConstantCallback from './useConstantCallback'
 import EditorContext from './EditorContext'
+import { useAutoMemo } from 'hooks.macro'
+import expandSchema from './expandSchema'
 import Editor from './Editor'
 import React from 'react'
 
@@ -33,27 +35,35 @@ export default function JsonForm(options = {}) {
     options.types.$object = ObjectEditor
   }
 
-  return function Form({ schema, onChange, value, computedPropsRest }) {
+  return function Form({ schema, onChange, value }) {
     if (typeof onChange !== 'function') {
       throw Error(
         'You must pass an onChange function to the editor created by @adrianhelvik/json-form',
       )
     }
 
-    const originalOnChange = useConstantCallback(onChange)
+    const cachedOnChange = useConstantCallback((nextValue) => {
+      if (typeof nextValue === 'function') {
+        nextValue = nextValue(value)
+      }
+      onChange(nextValue)
+    })
 
-    const contextValue = React.useMemo(
-      () => ({
-        originalOnChange,
-        options,
-        schema,
-      }),
-      [originalOnChange, schema],
-    )
+    const getRootValue = useConstantCallback(() => {
+      return value
+    })
+
+    const contextValue = useAutoMemo({
+      onChange: cachedOnChange,
+      options,
+      editors: options.types,
+      schema: expandSchema(schema),
+      getRootValue,
+    })
 
     return (
       <EditorContext.Provider value={contextValue}>
-        <Editor value={value} computedPropsRest={computedPropsRest} />
+        <Editor onChange={onChange} value={value} />
       </EditorContext.Provider>
     )
   }

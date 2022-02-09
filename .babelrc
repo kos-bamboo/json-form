@@ -1,6 +1,14 @@
 {
   "presets": [
-    "@babel/preset-env",
+    ["@babel/preset-env", {
+      "targets": {
+        "node": "current",
+        "chrome": "60"
+      },
+      "exclude": [
+        "@babel/plugin-transform-typeof-symbol"
+      ]
+    }],
     "@babel/preset-react"
   ],
   "plugins": [

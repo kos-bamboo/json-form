@@ -1,251 +1,158 @@
-import { useAutoCallback, useAutoMemo } from 'hooks.macro'
-import determineTypeName from './determineTypeName'
-import EditorContext from './EditorContext'
-import { useContext } from 'react'
-import deepSet from './deepSet'
-import * as util from './util'
-import access from './access'
+import objectKeyToLabel from './objectKeyToLabel'
+import { useAutoMemo } from 'hooks.macro'
+import defaultValue from './defaultValue'
+import useEditors from './useEditors'
+import inspect from 'util-inspect'
+import pluralize from 'pluralize'
 import typeOf from './typeOf'
 import React from 'react'
 
-function isCustomArray(typeName, type) {
-  return typeName === '$array' && typeof type[0] === 'symbol'
-}
-
-function resolveEditor({ typeName, types, type }) {
-  if (isCustomArray(typeName, type)) {
-    const arrayType = type[0]
-    if (!types[arrayType]) {
-      throw Error(`Missing custom array editor for ${String(arrayType)}`)
-    }
-    return types[arrayType]
-  } else {
-    return types[typeName]
+const tryInspect = (value) => {
+  try {
+    return inspect(value)
+  } catch (error) {
+    return `FAILED TO INSPECT VALUE`
   }
-}
-
-function coerceType(value, Editor, types, typeName) {
-  if (
-    (typeName === '$array' || Editor === types.$array) &&
-    typeOf(value) !== 'array'
-  ) {
-    return []
-  }
-
-  if (
-    (typeName === '$object' || Editor === types.$object) &&
-    typeOf(value) !== 'object'
-  ) {
-    return {}
-  }
-
-  if (value === undefined && Editor?.defaultValue !== null) {
-    return Editor.defaultValue
-  }
-
-  return value
-}
-
-function resolveType(schema, schemaKeyChain) {
-  const fullType = access(schema, schemaKeyChain)
-  const isExpanded = Boolean(fullType.$type)
-
-  return isExpanded ? fullType.$type : fullType
 }
 
 export default function SubEditor({
+  value: inputValue,
+  schema,
   onChange,
-  schemaKeyChain,
-  valueKeyChain,
-  rootValue,
-  computedPropsRest,
+  path,
+  label,
 }) {
-  const { originalOnChange, options, schema } = useContext(EditorContext)
+  const editors = useEditors()
 
-  const parentType = access(schema, schemaKeyChain.slice(0, -1))
-  const fullType = access(schema, schemaKeyChain)
-  const value = access(rootValue, valueKeyChain)
+  let editorProperty
+  let Editor
 
-  // istanbul ignore next
-  if (!fullType) {
-    console.error('Schema:', schema)
-    console.error('Key chain:', schemaKeyChain)
+  if (typeOf(schema.editor) === 'symbol') {
+    editorProperty = schema.editor
+  } else if (typeof schema.type === 'string') {
+    editorProperty = schema.type
+  } else if (typeOf(schema.type) === 'array') {
+    editorProperty = schema.type[0]
+  }
+
+  // An array with a symbol caused an error stack
+  // that made my brain turn into finely minced
+  // ground meat for a couple of days.
+  //
+  // If you see an error like this:
+  //
+  //    TypeError: Cannot convert a Symbol value to a string
+  //        at Array.join (<anonymous>)
+  //        at Array.toString (<anonymous>)
+  //
+  // You are accessing an object with a property
+  // which is an array with a symbol.
+  //
+  // Fuck this shit.
+  if (
+    typeof editorProperty !== 'string' &&
+    typeof editorProperty !== 'symbol'
+  ) {
     throw Error(
-      `Invalid type found at ${schemaKeyChain.join(
-        '.',
-      )}: ${fullType}\n\n  schema: ${JSON.stringify(schema, null, 2)}`,
+      'Expected schema editor property to be a symbol or a string. Got: ' +
+        tryInspect(editorProperty),
     )
   }
 
-  const scopedOnChange = useAutoCallback((value) => {
-    onChange(valueKeyChain, schemaKeyChain, value)
-  })
+  Editor = editors[editorProperty]
 
-  const isExpanded = Boolean(fullType.$type)
-
-  const type = resolveType(schema, schemaKeyChain)
-
-  const typeName = useAutoMemo(() => {
-    return determineTypeName(type)
-  })
-
-  const Editor = useAutoMemo(() => {
-    return resolveEditor({
-      types: options.types,
-      typeName,
-      type,
-    })
-  })
-
-  const arrayChildTypeIndex = isCustomArray(typeName, type) ? '1' : '0'
-
-  const childTypeName = useAutoMemo(() => {
-    if (typeName !== '$array') return null
-
-    let subType = type[arrayChildTypeIndex]
-
-    const expandedSubType = subType.$type ? subType.$type : subType
-
-    return determineTypeName(expandedSubType)
-  })
-
-  const ArrayChildEditor = useAutoMemo(() => {
-    if (childTypeName == null) return null
-    return resolveEditor({
-      types: options.types,
-      typeName: childTypeName,
-      type: resolveType(
-        schema,
-        schemaKeyChain.concat(
-          isExpanded ? ['$type', arrayChildTypeIndex] : [arrayChildTypeIndex],
-        ),
-      ),
-    })
-  })
-
-  const coercedValue = coerceType(value, Editor, options.types, typeName)
-
-  // istanbul ignore next
-  if (typeName === '$array' && typeOf(coercedValue) !== 'array') {
-    throw Error('Array type was not coerced into array.')
+  if (!Editor) {
+    switch (typeOf(editorProperty)) {
+      case 'symbol':
+        throw Error(
+          `Missing custom array editor for ${editorProperty.toString()}`,
+        )
+      case 'string':
+        throw Error(`Missing editor: ${editorProperty}`)
+      default:
+        throw Error('Missing editor')
+    }
   }
+
+  const value = useAutoMemo(() => {
+    switch (schema.type) {
+      case '$array': {
+        if (!Array.isArray(inputValue)) {
+          return []
+        }
+        return inputValue
+      }
+      case '$object': {
+        if (typeOf(inputValue) !== 'object') {
+          return {}
+        }
+        return inputValue
+      }
+      default: {
+        return inputValue
+      }
+    }
+  })
+
+  const add = useAutoMemo(() => {
+    if (schema.type !== '$array') return null
+
+    return () => {
+      onChange([...value, defaultValue(schema.items, editors)])
+    }
+  })
 
   const children = useAutoMemo(() => {
-    switch (typeName) {
-      case '$object': {
-        const children = []
-
-        for (const key of Object.keys(type)) {
-          children.push(
-            <SubEditor
-              key={key}
-              schemaKeyChain={schemaKeyChain.concat(
-                isExpanded ? ['$type', key] : [key],
-              )}
-              valueKeyChain={valueKeyChain.concat(key)}
-              onChange={onChange}
-              rootValue={rootValue}
-            />,
-          )
+    if (schema.type === '$array') {
+      return value.map((item, index) => {
+        if (!schema.items?.type) {
+          throw Error('Malformed array schema: ' + typeof schema)
         }
-
-        return children
-      }
-      case '$array': {
-        const children = []
-
-        for (let i = 0; i < coercedValue.length; i++) {
-          const nextKeyChain = schemaKeyChain.concat(
-            isExpanded ? ['$type', arrayChildTypeIndex] : arrayChildTypeIndex,
-          )
-          const nextValueKeyChain = valueKeyChain.concat(i)
-
-          children.push(
-            <SubEditor
-              key={i + '/' + coercedValue.length}
-              schemaKeyChain={nextKeyChain}
-              valueKeyChain={nextValueKeyChain}
-              onChange={onChange}
-              rootValue={rootValue}
-            />,
-          )
-        }
-
-        return children
-      }
-      default:
-        return null
+        return (
+          <SubEditor
+            key={index}
+            path={path.concat(index)}
+            value={item}
+            schema={schema.items}
+            label={`${pluralize.singular(label)} ${index + 1}`}
+            onChange={(childValue) => {
+              const nextValue = [...value]
+              nextValue[index] = childValue
+              onChange(nextValue)
+            }}
+          />
+        )
+      })
+    }
+    if (schema.type === '$object') {
+      return Object.entries(schema.items).map(([key, subSchema]) => {
+        return (
+          <SubEditor
+            key={key}
+            path={path.concat(key)}
+            value={value?.[key]}
+            schema={subSchema}
+            label={objectKeyToLabel(key)}
+            onChange={(childValue) => {
+              const nextValue = { ...value }
+              nextValue[key] = childValue
+              onChange(nextValue)
+            }}
+          />
+        )
+      })
     }
   })
 
-  const label = useAutoMemo(() => {
-    if (util.isArrayLike(parentType)) {
-      return util.decamelizeAndUppercaseFirst(
-        util.singular(schemaKeyChain[schemaKeyChain.length - 2]) +
-          ' ' +
-          (Number(valueKeyChain[valueKeyChain.length - 1]) + 1),
-      )
-    }
-
-    if (fullType && fullType.$label) return fullType.$label
-
-    let label = schemaKeyChain[schemaKeyChain.length - 1]
-
-    return util.decamelizeAndUppercaseFirst(label)
-  })
-
-  const computedProps = useAutoMemo(() => {
-    if (typeof fullType.$computedProps === 'function') {
-      const rest = util.isArrayLike(computedPropsRest) ? computedPropsRest : []
-      return fullType.$computedProps(rootValue, ...rest)
-    }
-    return {}
-  })
-
-  const add = useAutoCallback(() => {
-    if (typeName !== '$array') {
-      throw Error('add() can only be called from array editors')
-    }
-
-    const defaultValue = coerceType(
-      undefined,
-      ArrayChildEditor,
-      options.types,
-      childTypeName,
-    )
-
-    const array = (
-      util.isArrayLike(value) ? value : options.createArray()
-    ).concat(defaultValue)
-
-    const newValue = deepSet(
-      rootValue,
-      valueKeyChain,
-      array,
-      schemaKeyChain,
-      schema,
-    )
-
-    originalOnChange(newValue)
-  })
-
-  // istanbul ignore next
-  if (!Editor) {
-    throw Error(`No type with the name "${typeName}" has been registered`)
-  }
-
-  return useAutoMemo(
+  return (
     <Editor
-      onChange={scopedOnChange}
-      schemaKeyChain={schemaKeyChain}
-      valueKeyChain={valueKeyChain}
-      schema={schema}
-      label={label}
-      value={coercedValue}
+      onChange={onChange}
+      value={value}
       add={add}
-      {...computedProps}
+      label={label}
+      {...schema.props}
     >
       {children}
-    </Editor>,
+    </Editor>
   )
 }
