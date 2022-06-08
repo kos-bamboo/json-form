@@ -1,4 +1,5 @@
 import JsonForm, { DefaultArrayEditor } from '../src'
+import expandSchema from '../src/expandSchema'
 import { mount } from 'enzyme'
 import assert from 'assert'
 import React from 'react'
@@ -287,4 +288,41 @@ test('[pt3] bugfix: add should alter the correct array with expanded schema type
       },
     ],
   })
+})
+
+test('[repro]: it should provide an array of strings as options to dropdown editors', () => {
+  const availableOptions = {
+    dropdown: ['first', 'second', 'third'],
+  }
+
+  const Form = JsonForm({
+    types: {
+      dropdown: ({ choices }) => {
+        if (!Array.isArray(choices)) throw Error('props.choices should be an array')
+        assert.deepStrictEqual(choices, ['first', 'second', 'third'])
+        return choices
+      }
+    },
+  })
+
+  const schema = expandSchema(availableOptions)
+
+  expect(() => {
+    mount(
+      <Form
+        onChange={() => {}}
+        schema={availableOptions}
+        value={{
+          dropdown: [
+            {
+              choices: ['A1', 'A2'],
+            },
+            {
+              choices: ['B1', 'B2'],
+            },
+          ],
+        }}
+      />,
+    )
+  }).not.toThrow()
 })

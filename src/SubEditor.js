@@ -150,6 +150,7 @@ export default function SubEditor({
       value={value}
       add={add}
       label={label}
+      choices={schema.choices}
       {...schema.props}
     >
       {children}
