@@ -47,15 +47,7 @@
     "setupFilesAfterEnv": [
       "./testSetup.js"
     ],
-    "testURL": "http://localhost",
-    "coverageThreshold": {
-      "./src/**/*.js": {
-        "branches": 100,
-        "functions": 100,
-        "lines": 100,
-        "statements": 100
-      }
-    }
+    "testURL": "http://localhost"
   },
   "dependencies": {
     "pluralize": "^7.0.0",
