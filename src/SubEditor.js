@@ -47,8 +47,6 @@ export default function SubEditor({
   //
   // You are accessing an object with a property
   // which is an array with a symbol.
-  //
-  // Fuck this shit.
   if (
     typeof editorProperty !== 'string' &&
     typeof editorProperty !== 'symbol'
