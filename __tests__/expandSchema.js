@@ -87,6 +87,7 @@ test('the custom array type is expanded', () => {
       items: {
         type: 'string',
       },
+      params: 'string'
     },
   })
 })

@@ -8,14 +8,14 @@ export default function Editor({ onChange, value }) {
 
   return (
     <>
-      {Object.keys(schema).map((key) => (
+      {Object.keys(schema).map(key => (
         <SubEditor
           key={key}
           schema={schema[key]}
           path={[key]}
           value={value?.[key]}
           label={objectKeyToLabel(key)}
-          onChange={(childValue) => {
+          onChange={childValue => {
             if (typeof childValue === 'function') {
               childValue = childValue(value?.[key])
             }
@@ -24,6 +24,7 @@ export default function Editor({ onChange, value }) {
               [key]: childValue,
             })
           }}
+          params={schema[key].params}
         />
       ))}
     </>

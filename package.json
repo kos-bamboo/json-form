@@ -1,11 +1,11 @@
 {
-  "name": "@adrianhelvik/json-form",
-  "version": "3.0.1",
+  "name": "@euroos/json-form",
+  "version": "3.0.4",
   "main": "dist/index.js",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adrianhelvik/json-form"
+    "url": "https://github.com/kos-bamboo/json-form"
   },
   "devDependencies": {
     "@babel/cli": "^7.17.0",

@@ -21,6 +21,7 @@ export default function SubEditor({
   onChange,
   path,
   label,
+  params,
 }) {
   const editors = useEditors()
 
@@ -118,6 +119,7 @@ export default function SubEditor({
               nextValue[index] = childValue
               onChange(nextValue)
             }}
+            params={schema.params}
           />
         )
       })
@@ -136,6 +138,7 @@ export default function SubEditor({
               nextValue[key] = childValue
               onChange(nextValue)
             }}
+            params={subSchema.params}
           />
         )
       })
@@ -149,6 +152,7 @@ export default function SubEditor({
       add={add}
       label={label}
       choices={schema.choices}
+      params={params}
       {...schema.props}
     >
       {children}

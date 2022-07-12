@@ -1,12 +1,12 @@
 import typeOf from './typeOf'
 
-export default function expandSchema(schema) {
+export default function expandSchema(schema, rootValue) {
   switch (typeOf(schema)) {
     case 'object': {
       const result = {}
 
       for (const [key, val] of Object.entries(schema)) {
-        result[key] = expandSubSchema(val)
+        result[key] = expandSubSchema(val, rootValue)
       }
 
       return result
@@ -18,11 +18,11 @@ export default function expandSchema(schema) {
   }
 }
 
-export function expandSubSchema(schema) {
+export function expandSubSchema(schema, rootValue) {
   switch (typeOf(schema)) {
     case 'object': {
       if (schema.$type) {
-        let type = expandSubSchema(schema.$type)
+        let type = expandSubSchema(schema.$type, rootValue)
 
         let props = null
 
@@ -45,7 +45,7 @@ export function expandSubSchema(schema) {
       }
       const result = {}
       for (const [key, val] of Object.entries(schema)) {
-        result[key] = expandSubSchema(val)
+        result[key] = expandSubSchema(val, rootValue)
       }
       return {
         type: '$object',
@@ -57,14 +57,17 @@ export function expandSubSchema(schema) {
         return {
           type: '$array',
           editor: '$array',
-          items: expandSubSchema(schema[0]),
+          items: expandSubSchema(schema[0], rootValue),
         }
       }
       if (typeof schema[0] === 'symbol') {
+        const subSchema =
+          typeof schema[1] === 'function' ? schema[1](rootValue) : schema[1]
         return {
           type: '$array',
           editor: schema[0],
-          items: expandSubSchema(schema[1]),
+          items: expandSubSchema(subSchema, rootValue),
+          params: subSchema,
         }
       }
       return {
@@ -76,6 +79,9 @@ export function expandSubSchema(schema) {
       return {
         type: schema,
       }
+    }
+    case 'function': {
+      return expandSubSchema(schema(rootValue), rootValue)
     }
     default: {
       throw Error('Failed to parse schema')

@@ -57,7 +57,7 @@ export default function JsonForm(options = {}) {
       onChange: cachedOnChange,
       options,
       editors: options.types,
-      schema: expandSchema(schema),
+      schema: expandSchema(schema, value),
       getRootValue,
     })
 
